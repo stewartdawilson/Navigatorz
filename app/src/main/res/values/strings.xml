@@ -4,5 +4,9 @@
     <string name="access_token">pk.eyJ1Ijoid2lsc29uc2ZjIiwiYSI6ImNqbjNjYzJ3bjBkazAzcW15YXkzbGNmN3oifQ.FL-v4Yb-J8rEFQhRY2KCSw</string>
     <string name="user_location_permission_explanation">We need your location to track you!</string>
     <string name="user_location_permission_not_granted">Permission for your location was not granted.</string>
+    <string name="api_response" />
+    <string name="click_on_map_instruction" />
+    <string name="no_tilequery_response_features_toast">No points</string>
+    <string name="api_error">There  was an error</string>
 
 </resources>
