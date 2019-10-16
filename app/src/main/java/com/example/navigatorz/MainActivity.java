@@ -1,10 +1,13 @@
 package com.example.navigatorz;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
+import android.location.Location;
+import android.nfc.Tag;
 import android.os.Build;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
@@ -14,6 +17,11 @@ import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.mapbox.android.core.location.LocationEngine;
+import com.mapbox.android.core.location.LocationEngineCallback;
+import com.mapbox.android.core.location.LocationEngineProvider;
+import com.mapbox.android.core.location.LocationEngineRequest;
+import com.mapbox.android.core.location.LocationEngineResult;
 import com.mapbox.android.core.permissions.PermissionsListener;
 import com.mapbox.android.core.permissions.PermissionsManager;
 import com.mapbox.api.tilequery.MapboxTilequery;
@@ -35,6 +43,7 @@ import com.mapbox.mapboxsdk.maps.Style;
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
 
+import java.lang.ref.WeakReference;
 import java.util.List;
 
 import androidx.core.content.ContextCompat;
@@ -65,14 +74,21 @@ public class MainActivity extends AppCompatActivity implements
     private MapView mapView;
     private TextView tilequeryResponseTextView;
 
+    private LocationEngine locationEngine;
+    private long DEFAULT_INTERVAL_IN_MILLISECONDS = 1000L;
+    private long DEFAULT_MAX_WAIT_TIME = DEFAULT_INTERVAL_IN_MILLISECONDS * 5;
+
+    // Variables needed to listen to location updates
+    private MainActivityLocationCallback callback = new MainActivityLocationCallback(this);
+
     @Override
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-            // Mapbox access token is configured here. This needs to be called either in your application
-            // object or in the same activity which contains the mapview.
-            Mapbox.getInstance(this, getString(R.string.access_token));
+        // Mapbox access token is configured here. This needs to be called either in your application
+        // object or in the same activity which contains the mapview.
+        Mapbox.getInstance(this, getString(R.string.access_token));
 
         // This contains the MapView in XML and needs to be called after the access token is configured.
         setContentView(R.layout.activity_main);
@@ -178,13 +194,13 @@ public class MainActivity extends AppCompatActivity implements
     private void makeTilequeryApiCall(@NonNull LatLng point) {
         MapboxTilequery tilequery = MapboxTilequery.builder()
                 .accessToken(getString(R.string.access_token))
-                .mapIds("mapbox.mapbox-streets-v7")
+                .mapIds("mapbox.mapbox-streets-v8")
                 .query(Point.fromLngLat(point.getLongitude(), point.getLatitude()))
-                .radius(50)
-                .limit(10)
-                .geometry("polygon")
+                .radius(60)
+                .limit(5)
+                .geometry("point")
                 .dedupe(true)
-                .layers("building")
+                .layers("poi_label")
                 .build();
 
         tilequery.enqueueCall(new Callback<FeatureCollection>() {
@@ -230,9 +246,14 @@ public class MainActivity extends AppCompatActivity implements
             // Get an instance of the component
             LocationComponent locationComponent = mapboxMap.getLocationComponent();
 
-            // Activate with options
-            locationComponent.activateLocationComponent(LocationComponentActivationOptions.builder(
-                    this, loadedMapStyle).build());
+            // Set the LocationComponent activation options
+            LocationComponentActivationOptions locationComponentActivationOptions =
+                    LocationComponentActivationOptions.builder(this, loadedMapStyle)
+                            .useDefaultLocationEngine(false)
+                            .build();
+
+            // Activate with the LocationComponentActivationOptions object
+            locationComponent.activateLocationComponent(locationComponentActivationOptions);
 
             // Enable to make component visible
             locationComponent.setLocationComponentEnabled(true);
@@ -241,15 +262,27 @@ public class MainActivity extends AppCompatActivity implements
             locationComponent.setCameraMode(CameraMode.TRACKING);
             locationComponent.setRenderMode(RenderMode.COMPASS);
 
-            // Zoom the camera into the device's current location
-            mapboxMap.animateCamera(CameraUpdateFactory
-                    .newCameraPosition(new CameraPosition.Builder()
-                            .zoom(17)
-                            .build()), 2000);
+            initLocationEngine();
         } else {
             permissionsManager = new PermissionsManager(this);
             permissionsManager.requestLocationPermissions(this);
         }
+    }
+
+
+    /**
+     * Set up the LocationEngine and the parameters for querying the device's location
+     */
+    @SuppressLint("MissingPermission")
+    private void initLocationEngine() {
+        locationEngine = LocationEngineProvider.getBestLocationEngine(this);
+
+        LocationEngineRequest request = new LocationEngineRequest.Builder(DEFAULT_INTERVAL_IN_MILLISECONDS)
+                .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
+                .setMaxWaitTime(DEFAULT_MAX_WAIT_TIME).build();
+
+        locationEngine.requestLocationUpdates(request, callback, getMainLooper());
+        locationEngine.getLastLocation(callback);
     }
 
     // The following three methods are related to showing the device's location via the LocationComponent
@@ -271,6 +304,55 @@ public class MainActivity extends AppCompatActivity implements
         } else {
             Toast.makeText(this, R.string.user_location_permission_not_granted, Toast.LENGTH_LONG).show();
             finish();
+        }
+    }
+
+
+    private static class MainActivityLocationCallback
+            implements LocationEngineCallback<LocationEngineResult> {
+
+        private final WeakReference<MainActivity> activityWeakReference;
+
+        MainActivityLocationCallback(MainActivity activity) {
+            this.activityWeakReference = new WeakReference<>(activity);
+        }
+
+        /**
+         * The LocationEngineCallback interface's method which fires when the device's location has changed.
+         *
+         * @param result the LocationEngineResult object which has the last known location within it.
+         */
+        @Override
+        public void onSuccess(LocationEngineResult result) {
+            MainActivity activity = activityWeakReference.get();
+
+            if (activity != null) {
+                Location location = result.getLastLocation();
+                Log.d("LOCATION", "" +location);
+
+                if (location == null) {
+                    return;
+                }
+                // Pass the new location to the Maps SDK's LocationComponent
+                if (activity.mapboxMap != null && result.getLastLocation() != null) {
+                    activity.mapboxMap.getLocationComponent().forceLocationUpdate(result.getLastLocation());
+                }
+            }
+        }
+
+        /**
+         * The LocationEngineCallback interface's method which fires when the device's location can not be captured
+         *
+         * @param exception the exception message
+         */
+        @Override
+        public void onFailure(@NonNull Exception exception) {
+            Log.d("LocationChangeActivity", exception.getLocalizedMessage());
+            MainActivity activity = activityWeakReference.get();
+            if (activity != null) {
+                Toast.makeText(activity, exception.getLocalizedMessage(),
+                        Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
@@ -308,6 +390,13 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
+        // Prevent leaks
+        if (locationEngine != null) {
+            locationEngine.removeLocationUpdates(callback);
+        }
+        mapView.onDestroy();
+
         if (mapboxMap != null) {
             mapboxMap.removeOnMapClickListener(this);
         }
