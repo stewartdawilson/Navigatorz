@@ -14,12 +14,19 @@
 
         mapbox:layout_constraintBottom_toBottomOf="parent"
         mapbox:layout_constraintEnd_toEndOf="parent"
+        mapbox:layout_constraintHorizontal_bias="0.0"
         mapbox:layout_constraintStart_toStartOf="parent"
         mapbox:layout_constraintTop_toTopOf="parent"
+        mapbox:layout_constraintVertical_bias="1.0"
         mapbox:mapbox_cameraTargetLat="40.73581"
         mapbox:mapbox_cameraTargetLng="-73.99155"
-        mapbox:mapbox_cameraZoom="11"
-        />
+        mapbox:mapbox_cameraZoom="11">
+
+        <TextView
+            android:id="@+id/bearing_info_textview"
+            android:layout_width="86dp"
+            android:layout_height="wrap_content" />
+    </com.mapbox.mapboxsdk.maps.MapView>
 
     <androidx.cardview.widget.CardView
         android:layout_width="0dp"
@@ -56,6 +63,11 @@
                 android:layout_height="wrap_content" />
 
         </ScrollView>
+
+        <TextView
+            android:id="@+id/bearing_accuracy_info_textview"
+            android:layout_width="89dp"
+            android:layout_height="wrap_content" />
 
     </androidx.cardview.widget.CardView>
 

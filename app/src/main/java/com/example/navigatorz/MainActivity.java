@@ -62,7 +62,7 @@ import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconOffset;
  * the Tilequery API can be found at https://www.mapbox.com/api-documentation/#tilequery
  */
 public class MainActivity extends AppCompatActivity implements
-        OnMapReadyCallback, PermissionsListener, MapboxMap.OnMapClickListener {
+        OnMapReadyCallback, PermissionsListener {
 
     private static final String RESULT_GEOJSON_SOURCE_ID = "RESULT_GEOJSON_SOURCE_ID";
     private static final String CLICK_CENTER_GEOJSON_SOURCE_ID = "CLICK_CENTER_GEOJSON_SOURCE_ID";
@@ -73,6 +73,8 @@ public class MainActivity extends AppCompatActivity implements
     private MapboxMap mapboxMap;
     private MapView mapView;
     private TextView tilequeryResponseTextView;
+    private TextView bearingTextView;
+    private TextView bearingAccuracyTextView;
 
     private LocationEngine locationEngine;
     private long DEFAULT_INTERVAL_IN_MILLISECONDS = 1000L;
@@ -94,6 +96,8 @@ public class MainActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_main);
 
         tilequeryResponseTextView = findViewById(R.id.tilequery_response_info_textview);
+        bearingAccuracyTextView = findViewById(R.id.bearing_accuracy_info_textview);
+        bearingTextView = findViewById(R.id.bearing_info_textview);
 
         mapView = findViewById(R.id.mapView);
         mapView.onCreate(savedInstanceState);
@@ -107,30 +111,10 @@ public class MainActivity extends AppCompatActivity implements
         mapboxMap.setStyle(Style.MAPBOX_STREETS, new Style.OnStyleLoaded() {
             @Override
             public void onStyleLoaded(@NonNull Style style) {
-                addClickLayer(style);
-                addResultLayer(style);
                 displayDeviceLocation(style);
-                mapboxMap.addOnMapClickListener(MainActivity.this);
                 Toast.makeText(MainActivity.this, R.string.click_on_map_instruction, Toast.LENGTH_SHORT).show();
             }
         });
-    }
-
-    /**
-     * Add a map layer which will show a marker icon where the map was clicked
-     */
-    private void addClickLayer(@NonNull Style loadedMapStyle) {
-        loadedMapStyle.addImage(CLICK_ICON_ID, getBitmapFromVectorDrawable(MainActivity.this, R.drawable.red_marker));
-
-        loadedMapStyle.addSource(new GeoJsonSource(CLICK_CENTER_GEOJSON_SOURCE_ID,
-                FeatureCollection.fromFeatures(new Feature[] {})));
-
-        loadedMapStyle.addLayer(new SymbolLayer("click-layer", CLICK_CENTER_GEOJSON_SOURCE_ID).withProperties(
-                iconImage(CLICK_ICON_ID),
-                iconOffset(new Float[] {0f, -12f}),
-                iconIgnorePlacement(true),
-                iconAllowOverlap(true)
-        ));
     }
 
     public static Bitmap getBitmapFromVectorDrawable(Context context, int drawableId) {
@@ -148,43 +132,6 @@ public class MainActivity extends AppCompatActivity implements
         return bitmap;
     }
 
-    /**
-     * Add a map layer which will show marker icons for all of the Tilequery API results
-     */
-    private void addResultLayer(@NonNull Style loadedMapStyle) {
-        // Add the marker image to map
-        loadedMapStyle.addImage(RESULT_ICON_ID, getBitmapFromVectorDrawable(MainActivity.this, R.drawable.blue_marker));
-
-
-        // Retrieve GeoJSON information from the Mapbox Tilequery API
-        loadedMapStyle.addSource(new GeoJsonSource(RESULT_GEOJSON_SOURCE_ID));
-
-        loadedMapStyle.addLayer(new SymbolLayer(LAYER_ID, RESULT_GEOJSON_SOURCE_ID).withProperties(
-                iconImage(RESULT_ICON_ID),
-                iconOffset(new Float[] {0f, -12f}),
-                iconIgnorePlacement(true),
-                iconAllowOverlap(true)
-        ));
-    }
-
-
-    @Override
-    public boolean onMapClick(@NonNull LatLng point) {
-        mapboxMap.getStyle(new Style.OnStyleLoaded() {
-            @Override
-            public void onStyleLoaded(@NonNull Style style) {
-                // Move and display the click center layer's red marker icon to wherever the map was clicked on
-                GeoJsonSource clickLocationSource = style.getSourceAs(CLICK_CENTER_GEOJSON_SOURCE_ID);
-                if (clickLocationSource != null) {
-                    clickLocationSource.setGeoJson(Point.fromLngLat(point.getLongitude(), point.getLatitude()));
-                }
-
-                // Use the map click location to make a Tilequery API call
-                makeTilequeryApiCall(point);
-            }
-        });
-        return true;
-    }
 
     /**
      * Use the Java SDK's MapboxTilequery class to build a API request and use the API response
@@ -308,7 +255,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
-    private static class MainActivityLocationCallback
+    private class MainActivityLocationCallback
             implements LocationEngineCallback<LocationEngineResult> {
 
         private final WeakReference<MainActivity> activityWeakReference;
@@ -335,6 +282,15 @@ public class MainActivity extends AppCompatActivity implements
                 }
                 // Pass the new location to the Maps SDK's LocationComponent
                 if (activity.mapboxMap != null && result.getLastLocation() != null) {
+                    LatLng point = new LatLng(location.getLatitude(), location.getLongitude());
+                    makeTilequeryApiCall(point);
+                    Log.d("LOCATION", "" +location.getBearing());
+                    Log.d("LOCATION", "" +location.getBearingAccuracyDegrees());
+                    bearingAccuracyTextView.setText(String.format("%s", location.getBearingAccuracyDegrees()));
+                    bearingTextView.setText(String.format("%s", location.getBearing()));
+
+
+
                     activity.mapboxMap.getLocationComponent().forceLocationUpdate(result.getLastLocation());
                 }
             }
@@ -394,11 +350,6 @@ public class MainActivity extends AppCompatActivity implements
         // Prevent leaks
         if (locationEngine != null) {
             locationEngine.removeLocationUpdates(callback);
-        }
-        mapView.onDestroy();
-
-        if (mapboxMap != null) {
-            mapboxMap.removeOnMapClickListener(this);
         }
         mapView.onDestroy();
     }
