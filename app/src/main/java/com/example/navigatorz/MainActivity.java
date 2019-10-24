@@ -1,5 +1,6 @@
 package com.example.navigatorz;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -13,7 +14,10 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.os.Environment;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -43,7 +47,17 @@ import com.mapbox.mapboxsdk.maps.Style;
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
 
+import com.opencsv.CSVWriter;
+import pub.devrel.easypermissions.AfterPermissionGranted;
+import pub.devrel.easypermissions.EasyPermissions;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import androidx.core.content.ContextCompat;
@@ -52,10 +66,9 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconAllowOverlap;
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconIgnorePlacement;
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconImage;
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconOffset;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
 
 /**
  * Use the Mapbox Tilequery API to retrieve information about Features on a Vector Tileset. More info about
@@ -75,10 +88,17 @@ public class MainActivity extends AppCompatActivity implements
     private TextView tilequeryResponseTextView;
     private TextView bearingTextView;
     private TextView bearingAccuracyTextView;
+    private Button startBtn;
 
     private LocationEngine locationEngine;
     private long DEFAULT_INTERVAL_IN_MILLISECONDS = 1000L;
     private long DEFAULT_MAX_WAIT_TIME = DEFAULT_INTERVAL_IN_MILLISECONDS * 5;
+
+    private boolean bearingSwitch = false;
+    private List<String[]> data = new ArrayList<String[]>();
+    private File file;
+
+
 
     // Variables needed to listen to location updates
     private MainActivityLocationCallback callback = new MainActivityLocationCallback(this);
@@ -98,6 +118,15 @@ public class MainActivity extends AppCompatActivity implements
         tilequeryResponseTextView = findViewById(R.id.tilequery_response_info_textview);
         bearingAccuracyTextView = findViewById(R.id.bearing_accuracy_info_textview);
         bearingTextView = findViewById(R.id.bearing_info_textview);
+        startBtn = findViewById(R.id.startBtn);
+
+        startBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                bearingSwitch = !bearingSwitch;
+            }
+        });
+        getPermissionWriteFile();
 
         mapView = findViewById(R.id.mapView);
         mapView.onCreate(savedInstanceState);
@@ -238,6 +267,20 @@ public class MainActivity extends AppCompatActivity implements
         permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
+    private void getPermissionWriteFile() {
+        String perms = Manifest.permission.WRITE_EXTERNAL_STORAGE;
+        if (EasyPermissions.hasPermissions(this, perms)) {
+            // Already have permission, do the thing
+            // ...
+
+
+        } else {
+            // Do not have permissions, request them now
+            EasyPermissions.requestPermissions(this, "We need this",
+                    1, perms);
+        }
+    }
+
     @Override
     public void onExplanationNeeded(List<String> permissionsToExplain) {
         Toast.makeText(this, R.string.user_location_permission_explanation, Toast.LENGTH_LONG).show();
@@ -286,6 +329,19 @@ public class MainActivity extends AppCompatActivity implements
                     makeTilequeryApiCall(point);
                     Log.d("LOCATION", "" +location.getBearing());
                     Log.d("LOCATION", "" +location.getBearingAccuracyDegrees());
+
+                    if (bearingSwitch) {
+                        data.add(new String[] {"Bearing", String.valueOf(location.getBearing())});
+                    } else {
+                        if(!data.isEmpty()) {
+                            csvWriter(data);
+                            data = new ArrayList<String[]>();
+                        }
+
+                    }
+
+
+
                     bearingAccuracyTextView.setText(String.format("%s", location.getBearingAccuracyDegrees()));
                     bearingTextView.setText(String.format("%s", location.getBearing()));
 
@@ -311,6 +367,33 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
     }
+
+    @SuppressLint("SimpleDateFormat")
+    public void csvWriter(List<String[]> data) {
+        Log.d("csvWriter", data.toString());
+
+        File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
+
+        Log.d("PATH", path.getAbsolutePath());
+        String file_ts = new SimpleDateFormat("yyyyMMdd'T'HHmmss").format(new Date());
+
+        file = new File(path, "Bearing_Test" + "_" + file_ts + ".csv");
+
+        try {
+            CSVWriter writer = new CSVWriter(new FileWriter(file), ',');
+            Log.d("FILE", file.getAbsolutePath());
+            writer.writeAll(data);
+            Log.d("WRITER", data.toString());
+            writer.close();
+        } catch (IOException e) {
+            Log.e("MainActivity", "Caught IOException: " + e.getMessage());
+        }
+
+
+
+    }
+
+
 
     // Add the mapView lifecycle to the activity's lifecycle methods
     @Override

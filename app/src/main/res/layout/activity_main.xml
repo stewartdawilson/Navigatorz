@@ -14,7 +14,7 @@
 
         mapbox:layout_constraintBottom_toBottomOf="parent"
         mapbox:layout_constraintEnd_toEndOf="parent"
-        mapbox:layout_constraintHorizontal_bias="0.0"
+        mapbox:layout_constraintHorizontal_bias="1.0"
         mapbox:layout_constraintStart_toStartOf="parent"
         mapbox:layout_constraintTop_toTopOf="parent"
         mapbox:layout_constraintVertical_bias="1.0"
@@ -22,40 +22,27 @@
         mapbox:mapbox_cameraTargetLng="-73.99155"
         mapbox:mapbox_cameraZoom="11">
 
-        <TextView
-            android:id="@+id/bearing_info_textview"
-            android:layout_width="86dp"
-            android:layout_height="wrap_content" />
     </com.mapbox.mapboxsdk.maps.MapView>
 
     <androidx.cardview.widget.CardView
+        android:id="@+id/cardView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginLeft="8dp"
-        android:layout_marginRight="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
         mapbox:layout_constraintBottom_toBottomOf="@+id/mapView"
         mapbox:layout_constraintEnd_toEndOf="parent"
         mapbox:layout_constraintStart_toStartOf="parent"
         mapbox:layout_constraintTop_toTopOf="@+id/guideline8">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textStyle="bold"
-            android:textColor="@color/black_semi_transparent"
-            android:padding="8dp"
-            android:text="@string/api_response" />
-
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_marginLeft="8dp"
-            android:layout_marginRight="8dp"
-            android:layout_marginTop="32dp">
+            android:layout_marginTop="32dp"
+            android:layout_marginRight="8dp">
 
             <TextView
                 android:id="@+id/tilequery_response_info_textview"
@@ -65,9 +52,12 @@
         </ScrollView>
 
         <TextView
-            android:id="@+id/bearing_accuracy_info_textview"
-            android:layout_width="89dp"
-            android:layout_height="wrap_content" />
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="@string/api_response"
+            android:textColor="@color/black_semi_transparent"
+            android:textStyle="bold" />
 
     </androidx.cardview.widget.CardView>
 
@@ -77,6 +67,38 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         mapbox:layout_constraintGuide_percent="0.7" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/bearing_info_textview"
+                android:layout_width="97dp"
+                android:layout_height="29dp" />
+
+            <TextView
+                android:id="@+id/bearing_accuracy_info_textview"
+                android:layout_width="97dp"
+                android:layout_height="wrap_content"
+                mapbox:layout_constraintBottom_toBottomOf="parent"
+                mapbox:layout_constraintEnd_toEndOf="parent"
+                mapbox:layout_constraintHorizontal_bias="0.51"
+                mapbox:layout_constraintStart_toStartOf="parent"
+                mapbox:layout_constraintTop_toTopOf="parent" />
+
+            <Button
+                android:id="@+id/startBtn"
+                android:layout_width="99dp"
+                android:layout_height="wrap_content"
+                android:text="Start" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
