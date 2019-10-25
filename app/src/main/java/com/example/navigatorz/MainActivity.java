@@ -3,11 +3,9 @@ package com.example.navigatorz;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
-import android.nfc.Tag;
 import android.os.Build;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
@@ -17,6 +15,7 @@ import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.JsonObject;
 import com.mapbox.android.core.location.LocationEngine;
 import com.mapbox.android.core.location.LocationEngineCallback;
 import com.mapbox.android.core.location.LocationEngineProvider;
@@ -29,8 +28,6 @@ import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.FeatureCollection;
 import com.mapbox.geojson.Point;
 import com.mapbox.mapboxsdk.Mapbox;
-import com.mapbox.mapboxsdk.camera.CameraPosition;
-import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.location.LocationComponent;
 import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions;
@@ -40,11 +37,12 @@ import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapbox.mapboxsdk.maps.Style;
-import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
-import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
@@ -52,6 +50,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillExtrusionTranslate;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconAllowOverlap;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconIgnorePlacement;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconImage;
@@ -77,6 +76,9 @@ public class MainActivity extends AppCompatActivity implements
     private TextView bearingAccuracyTextView;
 
     private LocationEngine locationEngine;
+    private ArrayList<Location> tilequerylocs = new ArrayList<>();
+    private FeatureCollection fc;
+    private HashMap<String, ArrayList<String>> poi = new HashMap<>();
     private long DEFAULT_INTERVAL_IN_MILLISECONDS = 1000L;
     private long DEFAULT_MAX_WAIT_TIME = DEFAULT_INTERVAL_IN_MILLISECONDS * 5;
 
@@ -143,7 +145,7 @@ public class MainActivity extends AppCompatActivity implements
                 .accessToken(getString(R.string.access_token))
                 .mapIds("mapbox.mapbox-streets-v8")
                 .query(Point.fromLngLat(point.getLongitude(), point.getLatitude()))
-                .radius(60)
+                .radius(143)
                 .limit(5)
                 .geometry("point")
                 .dedupe(true)
@@ -155,22 +157,16 @@ public class MainActivity extends AppCompatActivity implements
             public void onResponse(Call<FeatureCollection> call, Response<FeatureCollection> response) {
                 if (response.body() != null) {
                     FeatureCollection responseFeatureCollection = response.body();
-                    tilequeryResponseTextView.setText(responseFeatureCollection.toJson());
-                    mapboxMap.getStyle(new Style.OnStyleLoaded() {
-                        @Override
-                        public void onStyleLoaded(@NonNull Style style) {
-                            GeoJsonSource resultSource = style.getSourceAs(RESULT_GEOJSON_SOURCE_ID);
-                            if (resultSource != null && responseFeatureCollection.features() != null) {
-                                List<Feature> featureList = responseFeatureCollection.features();
-                                if (featureList.isEmpty()) {
-                                    Toast.makeText(MainActivity.this,
-                                            getString(R.string.no_tilequery_response_features_toast), Toast.LENGTH_SHORT).show();
-                                } else {
-                                    resultSource.setGeoJson(FeatureCollection.fromFeatures(featureList));
-                                }
-                            }
+                    if (responseFeatureCollection.features() != null) {
+                        List<Feature> featureList = responseFeatureCollection.features();
+                        if (featureList.isEmpty()) {
+                            Toast.makeText(MainActivity.this,
+                                    getString(R.string.no_tilequery_response_features_toast), Toast.LENGTH_SHORT).show();
+                        } else {
+                            extractData(featureList);
+
                         }
-                    });
+                    }
                 }
             }
 
@@ -181,6 +177,40 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
     }
+
+    public void extractData(List<Feature> featureList) {
+        for (int i =0; i<featureList.size(); i++) {
+            Feature feature = featureList.get(i);
+
+            JsonObject tile = feature.getProperty("tilequery").getAsJsonObject();
+
+            JsonObject props = feature.properties();
+            Point p = (Point) feature.geometry();
+            if (props != null && tile != null && p != null) {
+                String location_name = props.get("name").getAsString();
+                String location_type = "";
+                if(props.get("category_en")!=null) {
+                    location_type = props.get("category_en").getAsString();
+                }
+                Double distance =  (double) Math.round(tile.get("distance").getAsDouble());
+
+                double longitude = p.longitude();
+                double latitude = p.latitude();
+
+                Location loc = new Location("");
+                loc.setLongitude(longitude);
+                loc.setLatitude(latitude);
+                tilequerylocs.add(loc);
+
+                ArrayList<String> details = new ArrayList<>();
+                details.add(location_type);
+                details.add(distance.toString());
+                poi.put(location_name, details);
+            }
+        }
+
+    }
+
 
     /**
      * Use the Maps SDK's LocationComponent to display the device location on the map
@@ -284,10 +314,15 @@ public class MainActivity extends AppCompatActivity implements
                 if (activity.mapboxMap != null && result.getLastLocation() != null) {
                     LatLng point = new LatLng(location.getLatitude(), location.getLongitude());
                     makeTilequeryApiCall(point);
+
                     Log.d("LOCATION", "" +location.getBearing());
-                    Log.d("LOCATION", "" +location.getBearingAccuracyDegrees());
-                    bearingAccuracyTextView.setText(String.format("%s", location.getBearingAccuracyDegrees()));
+                    Integer mybearing =  Math.round(location.getBearing());
                     bearingTextView.setText(String.format("%s", location.getBearing()));
+
+                    CalculateDirection cd = new CalculateDirection(location, mybearing, tilequerylocs);
+                    ArrayList<String> directions = cd.bearingsToDirection();
+                    StringBuilder output = buildOutput(directions);
+                    tilequeryResponseTextView.setText(output);
 
 
 
@@ -310,6 +345,16 @@ public class MainActivity extends AppCompatActivity implements
                         Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    public StringBuilder buildOutput(ArrayList<String> directions) {
+        StringBuilder poi_text = new StringBuilder();
+        int count = 0;
+        for (Entry<String, ArrayList<String>> pair : poi.entrySet()) {
+            poi_text.append(pair.getKey()).append(" is ").append(pair.getValue().get(1)).append("m ").append(" on your ").append(directions.get(count)).append("\n");
+            count++;
+        }
+        return poi_text;
     }
 
     // Add the mapView lifecycle to the activity's lifecycle methods
