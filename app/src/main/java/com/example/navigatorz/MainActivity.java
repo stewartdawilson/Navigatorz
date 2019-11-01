@@ -474,6 +474,20 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
+    private LatLng truncateLatLng(Location location) {
+        double lat = (Math.floor(location.getLatitude()*1e5))/1e5;
+        double lng = (Math.floor(location.getLongitude()*1e5))/1e5;
+        Log.d("LATLNG", "" +location.getLatitude() + " " + location.getLongitude());
+        Log.d("LATLNG", "" +location.getLatitude()*1e5 + " " + (location.getLongitude())*1e5);
+        Log.d("LATLNG", "" +Math.floor(location.getLongitude()*1e5) + " " + Math.floor(location.getLatitude()*1e5));
+
+        Log.d("LATLNG", "" +lat + " " + lng);
+
+        return new LatLng(lat, lng);
+
+    }
+
+
     public StringBuilder buildOutput(ArrayList<String> directions) {
         StringBuilder poi_text = new StringBuilder();
         int count = 0;
