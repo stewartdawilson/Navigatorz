@@ -1,24 +1,22 @@
 package com.example.navigatorz;
 
+import android.icu.text.LocaleDisplayNames;
 import android.location.Location;
-import android.nfc.Tag;
 import android.util.Log;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class CalculateDirection {
 
     private Location mylocation;
-    private Integer mybearing;
+    private ArrayList<Integer> mybearings;
     private ArrayList<Location> tilequerylocs;
     private String TAG = "CalculateDirection";
 
 
-    public CalculateDirection(Location mylocation, Integer mybearing, ArrayList<Location> tilequerylocs) {
+    public CalculateDirection(Location mylocation, ArrayList<Integer> mybearings, ArrayList<Location> tilequerylocs) {
         this.mylocation = mylocation;
-        this.mybearing =  mybearing;
+        this.mybearings =  mybearings;
         this.tilequerylocs = tilequerylocs;
     }
 
@@ -28,36 +26,94 @@ public class CalculateDirection {
             Integer bearing = (int) mylocation.bearingTo(tilequerylocs.get(i));
            bearings_to_poi.add(bearing);
        }
-       return bearings_to_poi;
+        Log.d(TAG+":tilequerylocs", tilequerylocs.toString());
+        Log.d(TAG+":bearingsToLocations", bearings_to_poi.toString());
+
+        return bearings_to_poi;
+    }
+
+    private int calculateAverage(List<Integer> bearings) {
+        Integer sum = 0;
+        if(!bearings.isEmpty()) {
+            for (Integer bearing : bearings) {
+                sum += bearing;
+            }
+            return (int) Math.round(sum.doubleValue() / bearings.size());
+        }
+        return Math.round(sum);
     }
 
     public ArrayList<String> bearingsToDirection() {
         ArrayList<String> directions = new ArrayList<>();
 
         ArrayList<Integer> bearings_to_poi = bearingsToLocations();
-        String mydirection = headingToString2(mybearing);
-        int my_bearing_back = (int)Math.round((mybearing+180)%360);
+
         for (int i =0; i<bearings_to_poi.size();i++) {
             Integer bearing = 0;
-            Log.d(TAG, bearings_to_poi.get(i).toString());
+            Integer mybearing = calculateAverage(mybearings);
+            int my_bearing_back = (int)Math.round((mybearing+180)%360);
+
+
 
             if(bearings_to_poi.get(i)<0) {
                 bearing = 360+bearings_to_poi.get(i);
             } else {
                 bearing = bearings_to_poi.get(i);
             }
-            if(bearing>mybearing || bearing<my_bearing_back) {
 
-                Log.d(TAG, bearing.toString());
-                String direction = "Right";
-                directions.add(direction);
+            Log.d(TAG+":BEARING BEFORE", bearing.toString());
 
-            } else if(bearing<mybearing || bearing>my_bearing_back) {
-                Log.d(TAG,bearing.toString());
-                String direction = "Left";
-                directions.add(direction);
+
+            bearing = (bearing-mybearing)%360;
+            if (bearing<0) bearing += 360;
+            int mybearingtemp = 0;
+            int my_bearing_backtemp = 180;
+
+            Log.d(TAG+":BEARING", bearing.toString());
+            Log.d(TAG+":My BEARING", mybearing.toString());
+            Log.d(TAG+":My BEARING BACK", ""+my_bearing_back);
+
+            int mybearingThres1 = (mybearingtemp+10)%360;
+            int mybearingThres2 = (mybearingtemp-10)%360;
+            int mybearingbackThres1 = (my_bearing_backtemp+10)%360;
+            int mybearingbackThres2 = (my_bearing_backtemp-10)%360;
+            if (mybearingThres2<0) mybearingThres2 += 360;
+            if (mybearingbackThres2<0) mybearingbackThres2 += 360;
+
+            Log.d(TAG+":BEARING-1", ""+mybearingThres1);
+            Log.d(TAG+":BEARING-2", ""+mybearingThres2);
+            Log.d(TAG+":BEARING-3", ""+mybearingbackThres1);
+            Log.d(TAG+":BEARING-4", ""+mybearingbackThres2);
+
+
+            if(mybearing==0) {
+                mybearingThres2 = 370;
+            }
+            if(my_bearing_back==0) {
+                mybearingbackThres2 = 370;
             }
 
+
+
+
+
+            if(bearing>mybearingThres1 && bearing<mybearingbackThres2) {
+                Log.d(TAG+":Adding RIGHT", bearing.toString());
+                String direction = "Right";
+                directions.add(direction);
+            } else if(bearing<mybearingThres2 && bearing>mybearingbackThres1) {
+                Log.d(TAG+":Adding LEFT",bearing.toString());
+                String direction = "Left";
+                directions.add(direction);
+            } else if((bearing<=mybearingThres1 || bearing>=mybearingThres2) || bearing==mybearing) {
+                Log.d(TAG+":Adding FRONT",bearing.toString());
+                String direction = "Front";
+                directions.add(direction);
+            } else if((bearing>=mybearingbackThres2 && bearing<=mybearingbackThres1) || bearing==my_bearing_back) {
+                Log.d(TAG+":Adding BEHIND",bearing.toString());
+                String direction = "Behind";
+                directions.add(direction);
+            }
         }
         return directions;
 
@@ -66,7 +122,7 @@ public class CalculateDirection {
     /*
     https://stackoverflow.com/questions/2131195/cardinal-direction-algorithm-in-java
      */
-    public static String headingToString2(double x)
+    private static String headingToString2(double x)
     {
         String[] directions = {"N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"};
         return directions[ (int)Math.round((  ((double)x % 360) / 45)) ];

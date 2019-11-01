@@ -26,6 +26,7 @@
             android:id="@+id/bearing_info_textview"
             android:layout_width="86dp"
             android:layout_height="wrap_content" />
+
     </com.mapbox.mapboxsdk.maps.MapView>
 
     <androidx.cardview.widget.CardView
@@ -77,6 +78,10 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         mapbox:layout_constraintGuide_percent="0.7" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
