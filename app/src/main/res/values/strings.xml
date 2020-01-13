@@ -8,5 +8,21 @@
     <string name="click_on_map_instruction" />
     <string name="no_tilequery_response_features_toast">No points</string>
     <string name="api_error">There  was an error</string>
+    <string name="foot">On foot</string>
+    <string name="still">Still</string>
+    <string name="walking">Walking</string>
+    <string name="unknown_activity">Unknown</string>
+    <string name="location_updated">updated</string>
+    <string name="launch_activity">luanch</string>
+    <string name="remove_location_updates">remove</string>
+    <string name="request_location_updates">update</string>
+    <string name="permission_rationale">we need shit</string>
+    <string name="ok">Ok</string>
+    <string name="permission_denied_explanation">we cant</string>
+    <string name="settings">settings</string>
+    <string name="explore">EXPLORE</string>
+    <string name="exploring">Exploring</string>
+    <string name="output_locations">OUTPUT LOCATIONS</string>
+    <string name="navigation">NAVIGATION</string>
 
 </resources>

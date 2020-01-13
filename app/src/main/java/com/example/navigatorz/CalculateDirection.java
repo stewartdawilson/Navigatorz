@@ -24,7 +24,7 @@ public class CalculateDirection {
         ArrayList<Integer> bearings_to_poi = new ArrayList<>();
         for(int i =0; i<tilequerylocs.size();i++) {
             Integer bearing = (int) mylocation.bearingTo(tilequerylocs.get(i));
-           bearings_to_poi.add(bearing);
+            bearings_to_poi.add(bearing);
        }
         Log.d(TAG+":tilequerylocs", tilequerylocs.toString());
         Log.d(TAG+":bearingsToLocations", bearings_to_poi.toString());
@@ -32,7 +32,7 @@ public class CalculateDirection {
         return bearings_to_poi;
     }
 
-    private int calculateAverage(List<Integer> bearings) {
+    public int calculateAverage(List<Integer> bearings) {
         Integer sum = 0;
         if(!bearings.isEmpty()) {
             for (Integer bearing : bearings) {
@@ -61,7 +61,7 @@ public class CalculateDirection {
                 bearing = bearings_to_poi.get(i);
             }
 
-            Log.d(TAG+":BEARING BEFORE", bearing.toString());
+            Log.d(TAG+":BEARING BEFORE TRANSFORMATION", bearing.toString());
 
 
             bearing = (bearing-mybearing)%360;
@@ -69,9 +69,9 @@ public class CalculateDirection {
             int mybearingtemp = 0;
             int my_bearing_backtemp = 180;
 
-            Log.d(TAG+":BEARING", bearing.toString());
-            Log.d(TAG+":My BEARING", mybearing.toString());
-            Log.d(TAG+":My BEARING BACK", ""+my_bearing_back);
+            Log.d(TAG+":BEARING AFTER TRANSFORMATION", bearing.toString());
+            Log.d(TAG+":MY CURRENT BEARING", mybearing.toString());
+            Log.d(TAG+":MY CURRENT BEARING BACK", ""+my_bearing_back);
 
             int mybearingThres1 = (mybearingtemp+10)%360;
             int mybearingThres2 = (mybearingtemp-10)%360;
@@ -80,20 +80,14 @@ public class CalculateDirection {
             if (mybearingThres2<0) mybearingThres2 += 360;
             if (mybearingbackThres2<0) mybearingbackThres2 += 360;
 
+
+
+
+
             Log.d(TAG+":BEARING-1", ""+mybearingThres1);
             Log.d(TAG+":BEARING-2", ""+mybearingThres2);
             Log.d(TAG+":BEARING-3", ""+mybearingbackThres1);
             Log.d(TAG+":BEARING-4", ""+mybearingbackThres2);
-
-
-            if(mybearing==0) {
-                mybearingThres2 = 370;
-            }
-            if(my_bearing_back==0) {
-                mybearingbackThres2 = 370;
-            }
-
-
 
 
 

@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:mapbox="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/constraint_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MapsActivity">
+
+    <com.mapbox.mapboxsdk.maps.MapView
+        android:id="@+id/mapView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+
+        mapbox:layout_constraintBottom_toBottomOf="parent"
+        mapbox:layout_constraintEnd_toEndOf="parent"
+        mapbox:layout_constraintHorizontal_bias="0.0"
+        mapbox:layout_constraintStart_toStartOf="parent"
+        mapbox:layout_constraintTop_toTopOf="parent"
+        mapbox:layout_constraintVertical_bias="1.0"
+        mapbox:mapbox_cameraTargetLat="40.73581"
+        mapbox:mapbox_cameraTargetLng="-73.99155"
+        mapbox:mapbox_cameraZoom="11">
+
+        <TextView
+            android:id="@+id/bearing_info_textview"
+            android:layout_width="86dp"
+            android:layout_height="wrap_content" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <Button
+                android:id="@+id/btnStopTracking"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Stop"
+                mapbox:layout_constraintBottom_toBottomOf="parent"
+                mapbox:layout_constraintEnd_toEndOf="parent"
+                mapbox:layout_constraintHorizontal_bias="0.981"
+                mapbox:layout_constraintStart_toStartOf="parent"
+                mapbox:layout_constraintTop_toTopOf="parent"
+                mapbox:layout_constraintVertical_bias="0.295" />
+
+            <TextView
+                android:id="@+id/txtConfidence"
+                android:layout_width="98dp"
+                android:layout_height="29dp"
+                android:text="TextView"
+                mapbox:layout_constraintBottom_toBottomOf="parent"
+                mapbox:layout_constraintEnd_toEndOf="parent"
+                mapbox:layout_constraintHorizontal_bias="0.98"
+                mapbox:layout_constraintStart_toStartOf="parent"
+                mapbox:layout_constraintTop_toTopOf="parent"
+                mapbox:layout_constraintVertical_bias="0.153" />
+
+            <Button
+                android:id="@+id/startBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start"
+                mapbox:layout_constraintBottom_toBottomOf="parent"
+                mapbox:layout_constraintEnd_toEndOf="parent"
+                mapbox:layout_constraintHorizontal_bias="0.981"
+                mapbox:layout_constraintStart_toStartOf="parent"
+                mapbox:layout_constraintTop_toTopOf="parent"
+                mapbox:layout_constraintVertical_bias="0.008" />
+
+            <TextView
+                android:id="@+id/txtActivity"
+                android:layout_width="98dp"
+                android:layout_height="29dp"
+                android:text="TextView"
+                mapbox:layout_constraintBottom_toBottomOf="parent"
+                mapbox:layout_constraintEnd_toEndOf="parent"
+                mapbox:layout_constraintHorizontal_bias="0.98"
+                mapbox:layout_constraintStart_toStartOf="parent"
+                mapbox:layout_constraintTop_toTopOf="parent"
+                mapbox:layout_constraintVertical_bias="0.096" />
+
+            <Button
+                android:id="@+id/btnStartTracking"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Track"
+                mapbox:layout_constraintBottom_toBottomOf="parent"
+                mapbox:layout_constraintEnd_toEndOf="parent"
+                mapbox:layout_constraintHorizontal_bias="0.981"
+                mapbox:layout_constraintStart_toStartOf="parent"
+                mapbox:layout_constraintTop_toTopOf="parent"
+                mapbox:layout_constraintVertical_bias="0.21" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_location_search"
+                android:layout_width="82dp"
+                android:layout_height="79dp"
+                android:clickable="true"
+                mapbox:layout_constraintBottom_toBottomOf="parent"
+                mapbox:layout_constraintEnd_toEndOf="parent"
+                mapbox:layout_constraintHorizontal_bias="0.981"
+                mapbox:layout_constraintStart_toStartOf="parent"
+                mapbox:layout_constraintTop_toBottomOf="@+id/btnStopTracking"
+                mapbox:layout_constraintVertical_bias="0.422"
+                mapbox:srcCompat="@android:color/holo_red_dark" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </com.mapbox.mapboxsdk.maps.MapView>
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline8"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        mapbox:layout_constraintGuide_percent="0.7" />
+
+    <FrameLayout
+        android:id="@+id/frame_navigation"
+        android:layout_width="409dp"
+        android:layout_height="168dp"
+        mapbox:layout_constraintBottom_toBottomOf="@+id/mapView"
+        mapbox:layout_constraintEnd_toEndOf="parent"
+        mapbox:layout_constraintStart_toStartOf="parent">
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardView_location"
+            android:layout_width="match_parent"
+            android:layout_height="156dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            mapbox:cardElevation="0dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                android:text="@string/api_response"
+                android:textColor="@color/black_semi_transparent"
+                android:textStyle="bold" />
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="8dp"
+                android:layout_marginTop="32dp"
+                android:layout_marginRight="8dp">
+
+                <TextView
+                    android:id="@+id/tilequery_response_info_textview"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+            </ScrollView>
+
+            <TextView
+                android:id="@+id/bearing_accuracy_info_textview"
+                android:layout_width="89dp"
+                android:layout_height="wrap_content" />
+
+        </androidx.cardview.widget.CardView>
+    </FrameLayout>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

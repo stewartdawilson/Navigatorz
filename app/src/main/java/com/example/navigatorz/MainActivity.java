@@ -1,553 +1,320 @@
 package com.example.navigatorz;
 
-import android.annotation.SuppressLint;
-import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
+import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
-import android.os.Bundle;
-import androidx.annotation.NonNull;
+import android.os.IBinder;
+import android.preference.PreferenceManager;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.appcompat.app.AppCompatActivity;
-
+import android.os.Bundle;
 import android.util.Log;
+
+import android.Manifest;
+
+import android.content.pm.PackageManager;
+
+import android.net.Uri;
+
+import android.provider.Settings;
+import androidx.annotation.NonNull;
+import com.google.android.material.snackbar.Snackbar;
+import androidx.core.app.ActivityCompat;
+
+import android.view.View;
+import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.ActivityRecognition;
-import com.google.android.gms.location.ActivityTransition;
-import com.google.android.gms.location.ActivityTransitionRequest;
-import com.google.android.gms.location.DetectedActivity;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
-import com.google.gson.JsonObject;
-import com.mapbox.android.core.location.LocationEngine;
-import com.mapbox.android.core.location.LocationEngineCallback;
-import com.mapbox.android.core.location.LocationEngineProvider;
-import com.mapbox.android.core.location.LocationEngineRequest;
-import com.mapbox.android.core.location.LocationEngineResult;
-import com.mapbox.android.core.permissions.PermissionsListener;
-import com.mapbox.android.core.permissions.PermissionsManager;
-import com.mapbox.api.tilequery.MapboxTilequery;
-import com.mapbox.geojson.Feature;
-import com.mapbox.geojson.FeatureCollection;
-import com.mapbox.geojson.Point;
-import com.mapbox.mapboxsdk.Mapbox;
-import com.mapbox.mapboxsdk.geometry.LatLng;
-import com.mapbox.mapboxsdk.location.LocationComponent;
-import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions;
-import com.mapbox.mapboxsdk.location.modes.CameraMode;
-import com.mapbox.mapboxsdk.location.modes.RenderMode;
-import com.mapbox.mapboxsdk.maps.MapView;
-import com.mapbox.mapboxsdk.maps.MapboxMap;
-import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
-import com.mapbox.mapboxsdk.maps.Style;
-import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
-import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
-
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map.Entry;
-
-
-import androidx.core.content.ContextCompat;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
-import android.hardware.Sensor;
-import android.hardware.SensorManager;
-
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconAllowOverlap;
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconIgnorePlacement;
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconImage;
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconOffset;
-
 /**
- * Use the Mapbox Tilequery API to retrieve information about Features on a Vector Tileset. More info about
- * the Tilequery API can be found at https://www.mapbox.com/api-documentation/#tilequery
+ * The only activity in this sample.
+ *
+ * Note: Users have three options in "Q" regarding location:
+ * <ul>
+ *     <li>Allow all the time</li>
+ *     <li>Allow while app is in use, i.e., while app is in foreground</li>
+ *     <li>Not allow location at all</li>
+ * </ul>
+ * Because this app creates a foreground service (tied to a Notification) when the user navigates
+ * away from the app, it only needs location "while in use." That is, there is no need to ask for
+ * location all the time (which requires additional permissions in the manifest).
+ *
+ * "Q" also now requires developers to specify foreground service type in the manifest (in this
+ * case, "location").
+ *
+ * Note: For Foreground Services, "P" requires additional permission in manifest. Please check
+ * project manifest for more information.
+ *
+ * Note: for apps running in the background on "O" devices (regardless of the targetSdkVersion),
+ * location may be computed less frequently than requested when the app is not in the foreground.
+ * Apps that use a foreground service -  which involves displaying a non-dismissable
+ * notification -  can bypass the background location limits and request location updates as before.
+ *
+ * This sample uses a long-running bound and started service for location updates. The service is
+ * aware of foreground status of this activity, which is the only bound client in
+ * this sample. After requesting location updates, when the activity ceases to be in the foreground,
+ * the service promotes itself to a foreground service and continues receiving location updates.
+ * When the activity comes back to the foreground, the foreground service stops, and the
+ * notification associated with that foreground service is removed.
+ *
+ * While the foreground service notification is displayed, the user has the option to launch the
+ * activity from the notification. The user can also remove location updates directly from the
+ * notification. This dismisses the notification and stops the service.
  */
 public class MainActivity extends AppCompatActivity implements
-        OnMapReadyCallback, PermissionsListener {
+        SharedPreferences.OnSharedPreferenceChangeListener {
+    private static final String TAG = MainActivity.class.getSimpleName();
 
-    private static final String RESULT_GEOJSON_SOURCE_ID = "RESULT_GEOJSON_SOURCE_ID";
-    private static final String CLICK_CENTER_GEOJSON_SOURCE_ID = "CLICK_CENTER_GEOJSON_SOURCE_ID";
-    private static final String LAYER_ID = "LAYER_ID";
-    private static final String RESULT_ICON_ID = "RESULT_ICON_ID";
-    private static final String CLICK_ICON_ID = "CLICK_ICON_ID";
-    private PermissionsManager permissionsManager;
-    private MapboxMap mapboxMap;
-    private MapView mapView;
-    private TextView tilequeryResponseTextView;
-    private TextView bearingTextView;
-    private String roadName = "";
+    // Used in checking for runtime permissions.
+    private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
+
+    // The BroadcastReceiver used to listen from broadcasts from the service.
+    private MyReceiver myReceiver;
+
+    // A reference to the service used to get location updates.
+    private LocationUpdatesService mService = null;
+
+    // Tracks the bound state of the service.
+    private boolean mBound = false;
+    
+    // UI elements.
+    private ImageButton mRequestLocationUpdatesButton;
+    private TextView mExploretxt;
+    private ImageButton mNavigationButton;
 
 
+    // Monitors the state of the connection to the service.
+    private final ServiceConnection mServiceConnection = new ServiceConnection() {
 
-    private SensorManager sensorManager;
-    private Sensor sensor;
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            LocationUpdatesService.LocalBinder binder = (LocationUpdatesService.LocalBinder) service;
+            mService = binder.getService();
+            mBound = true;
+        }
 
-    private LocationEngine locationEngine;
-    private ArrayList<Location> tilequerylocs = new ArrayList<>();
-    private HashMap<String, ArrayList<String>> poi = new HashMap<>();
-    private ArrayList<Integer> bearings_arr = new ArrayList<Integer>();
-    private long DEFAULT_INTERVAL_IN_MILLISECONDS = 1000L;
-    private long DEFAULT_MAX_WAIT_TIME = DEFAULT_INTERVAL_IN_MILLISECONDS * 5;
-
-    // Variables needed to listen to location updates
-    private MainActivityLocationCallback callback = new MainActivityLocationCallback(this);
-
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mService = null;
+            mBound = false;
+        }
+    };
 
     @Override
-
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Mapbox access token is configured here. This needs to be called either in your application
-        // object or in the same activity which contains the mapview.
-        Mapbox.getInstance(this, getString(R.string.access_token));
-
-        // This contains the MapView in XML and needs to be called after the access token is configured.
+        myReceiver = new MyReceiver();
         setContentView(R.layout.activity_main);
 
-        tilequeryResponseTextView = findViewById(R.id.tilequery_response_info_textview);
-        bearingTextView = findViewById(R.id.bearing_info_textview);
-
-        mapView = findViewById(R.id.mapView);
-        mapView.onCreate(savedInstanceState);
-        mapView.getMapAsync(this);
-    }
-
-    @SuppressWarnings( {"MissingPermission"})
-    @Override
-    public void onMapReady(@NonNull final MapboxMap mapboxMap) {
-        MainActivity.this.mapboxMap = mapboxMap;
-        mapboxMap.setStyle(Style.MAPBOX_STREETS, new Style.OnStyleLoaded() {
-            @Override
-            public void onStyleLoaded(@NonNull Style style) {
-                displayDeviceLocation(style);
-                addResultLayer(style);
-
-                Toast.makeText(MainActivity.this, R.string.click_on_map_instruction, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-
-
-    /**
-     * Add a map layer which will show marker icons for all of the Tilequery API results
-     */
-    private void addResultLayer(@NonNull Style loadedMapStyle) {
-        // Add the marker image to map
-        loadedMapStyle.addImage(RESULT_ICON_ID, getBitmapFromVectorDrawable(this, R.drawable.blue_marker));
-
-        // Retrieve GeoJSON information from the Mapbox Tilequery API
-        loadedMapStyle.addSource(new GeoJsonSource(RESULT_GEOJSON_SOURCE_ID));
-
-        loadedMapStyle.addLayer(new SymbolLayer(LAYER_ID, RESULT_GEOJSON_SOURCE_ID).withProperties(
-                iconImage(RESULT_ICON_ID),
-                iconOffset(new Float[] {0f, -12f}),
-                iconIgnorePlacement(true),
-                iconAllowOverlap(true)
-        ));
-    }
-
-    public static Bitmap getBitmapFromVectorDrawable(Context context, int drawableId) {
-        Drawable drawable = ContextCompat.getDrawable(context, drawableId);
-
-        Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(),
-                drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-        drawable.draw(canvas);
-
-        return bitmap;
-    }
-
-
-    /**
-     * Use the Java SDK's MapboxTilequery class to build a API request and use the API response
-     *
-     * @param point the center point that the the tilequery will originate from.
-     */
-    private void makeTilequeryApiCall(@NonNull LatLng point) {
-        MapboxTilequery tilequery = MapboxTilequery.builder()
-                .accessToken(getString(R.string.access_token))
-                .mapIds("mapbox.mapbox-streets-v8")
-                .query(Point.fromLngLat(point.getLongitude(), point.getLatitude()))
-                .radius(143)
-                .limit(8)
-                .geometry("point")
-                .dedupe(true)
-                .layers("poi_label")
-                .build();
-
-        tilequery.enqueueCall(new Callback<FeatureCollection>() {
-            @Override
-            public void onResponse(Call<FeatureCollection> call, Response<FeatureCollection> response) {
-                if (response.body() != null) {
-                    FeatureCollection responseFeatureCollection = response.body();
-                    if (responseFeatureCollection.features() != null) {
-                        List<Feature> featureList = responseFeatureCollection.features();
-                        if (featureList.isEmpty()) {
-                            Toast.makeText(MainActivity.this,
-                                    getString(R.string.no_tilequery_response_features_toast), Toast.LENGTH_SHORT).show();
-                        } else {
-                            tilequerylocs = new ArrayList<>();
-                            poi = new HashMap<>();
-                            Log.d("FEATURELIST-POI", featureList.toString());
-
-                            extractDataPOI(featureList);
-
-                        }
-                    }
-                    mapboxMap.getStyle(new Style.OnStyleLoaded() {
-                        @Override
-                        public void onStyleLoaded(@NonNull Style style) {
-                            GeoJsonSource resultSource = style.getSourceAs(RESULT_GEOJSON_SOURCE_ID);
-                            if (resultSource != null && responseFeatureCollection.features() != null) {
-                                List<Feature> featureList = responseFeatureCollection.features();
-                                if (featureList.isEmpty()) {
-                                    Toast.makeText(MainActivity.this,
-                                            getString(R.string.no_tilequery_response_features_toast), Toast.LENGTH_SHORT).show();
-                                } else {
-                                    resultSource.setGeoJson(FeatureCollection.fromFeatures(featureList));
-                                }
-                            }
-                        }
-                    });
-                }
-            }
-
-            @Override
-            public void onFailure(Call<FeatureCollection> call, Throwable throwable) {
-                Log.d("Request failed: %s", throwable.getMessage());
-                Toast.makeText(MainActivity.this, R.string.api_error, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    /**
-     * Use the Java SDK's MapboxTilequery class to build a API request and use the API response
-     *
-     * @param point the center point that the the tilequery will originate from.
-     */
-    private void makeTilequeryApiRoadCall(@NonNull LatLng point) {
-        MapboxTilequery tilequery = MapboxTilequery.builder()
-                .accessToken(getString(R.string.access_token))
-                .mapIds("mapbox.mapbox-streets-v8")
-                .query(Point.fromLngLat(point.getLongitude(), point.getLatitude()))
-                .radius(60)
-                .limit(1)
-                .geometry("linestring")
-                .dedupe(true)
-                .layers("road")
-                .build();
-
-        tilequery.enqueueCall(new Callback<FeatureCollection>() {
-            @Override
-            public void onResponse(Call<FeatureCollection> call, Response<FeatureCollection> response) {
-                if (response.body() != null) {
-                    FeatureCollection responseFeatureCollection = response.body();
-                    if (responseFeatureCollection.features() != null) {
-                        List<Feature> featureList = responseFeatureCollection.features();
-                        if (featureList.isEmpty()) {
-                            Toast.makeText(MainActivity.this,
-                                    getString(R.string.no_tilequery_response_features_toast), Toast.LENGTH_SHORT).show();
-                        } else {
-                            roadName = "";
-                            Log.d("FEATURELIST-ROAD", featureList.toString());
-                            extractDataRoad(featureList);
-
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(Call<FeatureCollection> call, Throwable throwable) {
-                Log.d("Request failed: %s", throwable.getMessage());
-                Toast.makeText(MainActivity.this, R.string.api_error, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    public void extractDataRoad(List<Feature> featureList) {
-        for (int i =0; i<featureList.size(); i++) {
-            Feature feature = featureList.get(i);
-
-            JsonObject tile = feature.getProperty("tilequery").getAsJsonObject();
-
-            JsonObject props = feature.properties();
-            if (tile.get("layer").getAsString().equals("road") && tile.get("geometry").getAsString().equals("linestring") && props.get("name")!=null) {
-                roadName = props.get("name").getAsString();
-                break;
+        // Check that the user hasn't revoked permissions by going to Settings.
+        if (Utils.requestingLocationUpdates(this)) {
+            if (!checkPermissions()) {
+                requestPermissions();
             }
         }
-    }
-
-    public void extractDataPOI(List<Feature> featureList) {
-        for (int i =0; i<featureList.size(); i++) {
-            Feature feature = featureList.get(i);
-
-            JsonObject tile = feature.getProperty("tilequery").getAsJsonObject();
-
-            JsonObject props = feature.properties();
-            Point p = (Point) feature.geometry();
-            if (props != null && tile != null && p != null) {
-
-                String location_name = props.get("name").getAsString();
-                String location_type = "";
-                if(props.get("category_en")!=null) {
-                    location_type = props.get("category_en").getAsString();
-                }
-
-                double distance =  (double) Math.round(tile.get("distance").getAsDouble());
-
-                double longitude = p.longitude();
-                double latitude = p.latitude();
-
-                Location loc = new Location("");
-                loc.setLongitude(longitude);
-                loc.setLatitude(latitude);
-                tilequerylocs.add(loc);
-
-                ArrayList<String> details = new ArrayList<>();
-                details.add(location_type);
-                details.add(Double.toString(distance));
-                poi.put(location_name, details);
-            }
-        }
-
-    }
-
-
-    /**
-     * Use the Maps SDK's LocationComponent to display the device location on the map
-     */
-    @SuppressWarnings( {"MissingPermission"})
-    private void displayDeviceLocation(@NonNull Style loadedMapStyle) {
-        // Check if permissions are enabled and if not request
-        if (PermissionsManager.areLocationPermissionsGranted(this)) {
-
-            // Get an instance of the component
-            LocationComponent locationComponent = mapboxMap.getLocationComponent();
-
-            // Set the LocationComponent activation options
-            LocationComponentActivationOptions locationComponentActivationOptions =
-                    LocationComponentActivationOptions.builder(this, loadedMapStyle)
-                            .useDefaultLocationEngine(false)
-                            .build();
-
-            // Activate with the LocationComponentActivationOptions object
-            locationComponent.activateLocationComponent(locationComponentActivationOptions);
-
-            // Enable to make component visible
-            locationComponent.setLocationComponentEnabled(true);
-
-            // Set the component's camera mode
-            locationComponent.setCameraMode(CameraMode.TRACKING);
-            locationComponent.setRenderMode(RenderMode.COMPASS);
-
-            initLocationEngine();
-        } else {
-            permissionsManager = new PermissionsManager(this);
-            permissionsManager.requestLocationPermissions(this);
-        }
-    }
-
-
-    /**
-     * Set up the LocationEngine and the parameters for querying the device's location
-     */
-    @SuppressLint("MissingPermission")
-    private void initLocationEngine() {
-        locationEngine = LocationEngineProvider.getBestLocationEngine(this);
-
-        LocationEngineRequest request = new LocationEngineRequest.Builder(DEFAULT_INTERVAL_IN_MILLISECONDS)
-                .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
-                .setMaxWaitTime(DEFAULT_MAX_WAIT_TIME).build();
-
-        locationEngine.requestLocationUpdates(request, callback, getMainLooper());
-        locationEngine.getLastLocation(callback);
-    }
-
-    // The following three methods are related to showing the device's location via the LocationComponent
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults);
-    }
-
-    @Override
-    public void onExplanationNeeded(List<String> permissionsToExplain) {
-        Toast.makeText(this, R.string.user_location_permission_explanation, Toast.LENGTH_LONG).show();
-    }
-
-    @Override
-    public void onPermissionResult(boolean granted) {
-        Style style = mapboxMap.getStyle();
-        if (granted && style != null) {
-            displayDeviceLocation(style);
-        } else {
-            Toast.makeText(this, R.string.user_location_permission_not_granted, Toast.LENGTH_LONG).show();
-            finish();
-        }
-    }
-
-
-    private class MainActivityLocationCallback
-            implements LocationEngineCallback<LocationEngineResult> {
-
-        private final WeakReference<MainActivity> activityWeakReference;
-
-        MainActivityLocationCallback(MainActivity activity) {
-            this.activityWeakReference = new WeakReference<>(activity);
-        }
-
-        /**
-         * The LocationEngineCallback interface's method which fires when the device's location has changed.
-         *
-         * @param result the LocationEngineResult object which has the last known location within it.
-         */
-        @Override
-        public void onSuccess(LocationEngineResult result) {
-            MainActivity activity = activityWeakReference.get();
-
-            if (activity != null) {
-                Location location = result.getLastLocation();
-                Log.d("LOCATION", "" +location);
-
-                if (location == null) {
-                    return;
-                }
-                // Pass the new location to the Maps SDK's LocationComponent
-                if (activity.mapboxMap != null && result.getLastLocation() != null) {
-
-                    LatLng point = truncateLatLng(location);
-
-                    makeTilequeryApiCall(point);
-                    makeTilequeryApiRoadCall(point);
-
-
-
-                    Log.d("LOCATION", "" +location.getBearing());
-                    Integer mybearing =  Math.round(location.getBearing());
-                    if(bearings_arr.size()<6) {
-                        bearings_arr.add(mybearing);
-                    } else {
-                        bearings_arr.remove(0);
-                        bearings_arr.add(mybearing);
-                    }
-                    bearingTextView.setText(String.format("%s", location.getBearing()));
-
-                    CalculateDirection cd = new CalculateDirection(location, bearings_arr, tilequerylocs);
-                    ArrayList<String> directions = cd.bearingsToDirection();
-                    StringBuilder output = buildOutput(directions);
-                    Log.d("ROAD", "" +roadName);
-
-                    tilequeryResponseTextView.setText("You are on " + roadName + " here are the Points of Interest:\n" + output);
-
-                    activity.mapboxMap.getLocationComponent().forceLocationUpdate(result.getLastLocation());
-                }
-            }
-        }
-
-        /**
-         * The LocationEngineCallback interface's method which fires when the device's location can not be captured
-         *
-         * @param exception the exception message
-         */
-        @Override
-        public void onFailure(@NonNull Exception exception) {
-            Log.d("LocationChangeActivity", exception.getLocalizedMessage());
-            MainActivity activity = activityWeakReference.get();
-            if (activity != null) {
-                Toast.makeText(activity, exception.getLocalizedMessage(),
-                        Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    private LatLng truncateLatLng(Location location) {
-        double lat = (Math.floor(location.getLatitude()*1e5))/1e5;
-        double lng = (Math.floor(location.getLongitude()*1e5))/1e5;
-        Log.d("LATLNG", "" +location.getLatitude() + " " + location.getLongitude());
-        Log.d("LATLNG", "" +location.getLatitude()*1e5 + " " + (location.getLongitude())*1e5);
-        Log.d("LATLNG", "" +Math.floor(location.getLongitude()*1e5) + " " + Math.floor(location.getLatitude()*1e5));
-
-        Log.d("LATLNG", "" +lat + " " + lng);
-
-        return new LatLng(lat, lng);
-
-    }
-
-
-    public StringBuilder buildOutput(ArrayList<String> directions) {
-        StringBuilder poi_text = new StringBuilder();
-        int count = 0;
-        for (Entry<String, ArrayList<String>> pair : poi.entrySet()) {
-            Log.d("COUNT", ""+count);
-            Log.d("PAIR", pair.getKey());
-            Log.d("DIRECTIONSIZE", ""+directions.size());
-            Log.d("DIRECTIONS", directions.get(count));
-
-            poi_text.append(pair.getKey()).append(" is ").append(pair.getValue().get(1)).append("m ").append(" on your ").append(directions.get(count)).append("\n");
-            count++;
-        }
-        return poi_text;
-    }
-
-    // Add the mapView lifecycle to the activity's lifecycle methods
-    @Override
-    public void onResume() {
-        super.onResume();
-        mapView.onResume();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        mapView.onStart();
+        PreferenceManager.getDefaultSharedPreferences(this)
+                .registerOnSharedPreferenceChangeListener(this);
+
+        mRequestLocationUpdatesButton = (ImageButton) findViewById(R.id.request_location_updates_button);
+        mNavigationButton = (ImageButton) findViewById(R.id.nav_map_button);
+
+        mExploretxt = (TextView) findViewById(R.id.txtExplore);
+
+        mRequestLocationUpdatesButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.d(TAG, "Exploring button pressed");
+                boolean state = Utils.requestingLocationUpdates(getApplicationContext());
+                if (!checkPermissions()) {
+                    requestPermissions();
+                } else {
+                    Log.d(TAG, "state:"+(state));
+                    if(!state) {
+                        Log.i(TAG, "Starting exploring");
+                        mService.requestLocationUpdates();
+                    } else {
+                        Log.i(TAG, "Stopping exploring");
+                        mService.removeLocationUpdates();
+                    }
+                }
+            }
+        });
+
+        mNavigationButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(MainActivity.this, MapsActivity.class));
+            }
+        });
+
+        // Restore the state of the buttons when the activity (re)launches.
+        setButtonsState(Utils.requestingLocationUpdates(this));
+
+        // Bind to the service. If the service is in foreground mode, this signals to the service
+        // that since this activity is in the foreground, the service can exit foreground mode.
+        bindService(new Intent(this, LocationUpdatesService.class), mServiceConnection,
+                Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        LocalBroadcastManager.getInstance(this).registerReceiver(myReceiver,
+                new IntentFilter(LocationUpdatesService.ACTION_BROADCAST));
+    }
+
+    @Override
+    protected void onPause() {
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(myReceiver);
+        super.onPause();
     }
 
     @Override
     protected void onStop() {
-        super.onStop();
-        mapView.onStop();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        mapView.onPause();
-    }
-
-    @Override
-    public void onLowMemory() {
-        super.onLowMemory();
-        mapView.onLowMemory();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-
-        // Prevent leaks
-        if (locationEngine != null) {
-            locationEngine.removeLocationUpdates(callback);
+        if (mBound) {
+            // Unbind from the service. This signals to the service that this activity is no longer
+            // in the foreground, and the service can respond by promoting itself to a foreground
+            // service.
+            unbindService(mServiceConnection);
+            mBound = false;
         }
-        mapView.onDestroy();
+        PreferenceManager.getDefaultSharedPreferences(this)
+                .unregisterOnSharedPreferenceChangeListener(this);
+        super.onStop();
+    }
+
+    /**
+     * Returns the current state of the permissions needed.
+     */
+    private boolean checkPermissions() {
+        return  PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION);
+    }
+
+    private void requestPermissions() {
+        boolean shouldProvideRationale =
+                ActivityCompat.shouldShowRequestPermissionRationale(this,
+                        Manifest.permission.ACCESS_FINE_LOCATION);
+
+        // Provide an additional rationale to the user. This would happen if the user denied the
+        // request previously, but didn't check the "Don't ask again" checkbox.
+        if (shouldProvideRationale) {
+            Log.i(TAG, "Displaying permission rationale to provide additional context.");
+            Snackbar.make(
+                    findViewById(R.id.activity_main),
+                    R.string.permission_rationale,
+                    Snackbar.LENGTH_INDEFINITE)
+                    .setAction(R.string.ok, new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            // Request permission
+                            ActivityCompat.requestPermissions(MainActivity.this,
+                                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                                    REQUEST_PERMISSIONS_REQUEST_CODE);
+                        }
+                    })
+                    .show();
+        } else {
+            Log.i(TAG, "Requesting permission");
+            // Request permission. It's possible this can be auto answered if device policy
+            // sets the permission in a given state or the user denied the permission
+            // previously and checked "Never ask again".
+            ActivityCompat.requestPermissions(MainActivity.this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    REQUEST_PERMISSIONS_REQUEST_CODE);
+        }
+    }
+
+    /**
+     * Callback received when a permissions request has been completed.
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        Log.i(TAG, "onRequestPermissionResult");
+        if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE) {
+            if (grantResults.length <= 0) {
+                // If user interaction was interrupted, the permission request is cancelled and you
+                // receive empty arrays.
+                Log.i(TAG, "User interaction was cancelled.");
+            } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission was granted.
+                mService.requestLocationUpdates();
+            } else {
+                // Permission denied.
+                setButtonsState(false);
+                Snackbar.make(
+                        findViewById(R.id.activity_main),
+                        R.string.permission_denied_explanation,
+                        Snackbar.LENGTH_INDEFINITE)
+                        .setAction(R.string.settings, new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                // Build intent that displays the App settings screen.
+                                Intent intent = new Intent();
+                                intent.setAction(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                Uri uri = Uri.fromParts("package",
+                                        BuildConfig.APPLICATION_ID, null);
+                                intent.setData(uri);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(intent);
+                            }
+                        })
+                        .show();
+            }
+        }
+    }
+
+    /**
+     * Receiver for broadcasts sent by {@link LocationUpdatesService}.
+     */
+    private class MyReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Location location = intent.getParcelableExtra(LocationUpdatesService.EXTRA_LOCATION);
+            if (location != null) {
+                Toast.makeText(MainActivity.this, Utils.getLocationText(location),
+                        Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        mapView.onSaveInstanceState(outState);
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+        // Update the buttons state depending on whether location updates are being requested.
+        if (s.equals(Utils.KEY_REQUESTING_LOCATION_UPDATES)) {
+            setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_LOCATION_UPDATES,
+                    false));
+        }
+    }
+
+    private void setButtonsState(boolean requestingLocationUpdates) {
+        Log.d(TAG, requestingLocationUpdates+"");
+        if (requestingLocationUpdates) {
+            Log.d(TAG, "Change buttons to yellow");
+            mRequestLocationUpdatesButton.setColorFilter(Color.BLACK);
+            mExploretxt.setTextColor(Color.BLACK);
+            mRequestLocationUpdatesButton.setBackground(getDrawable(R.drawable.roundcorneryellow));
+        } else {
+            Log.d(TAG, "Change buttons to black");
+            mRequestLocationUpdatesButton.setColorFilter(Color.WHITE);
+            mExploretxt.setTextColor(Color.WHITE);
+            mRequestLocationUpdatesButton.setBackground(getDrawable(R.drawable.roundcornerblack));
+        }
     }
 }
