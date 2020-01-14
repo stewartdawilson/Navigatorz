@@ -22,9 +22,7 @@ import android.os.Environment;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -37,14 +35,11 @@ import com.mapbox.android.core.location.LocationEngineRequest;
 import com.mapbox.android.core.location.LocationEngineResult;
 import com.mapbox.android.core.permissions.PermissionsListener;
 import com.mapbox.android.core.permissions.PermissionsManager;
-import com.mapbox.api.geocoding.v5.models.CarmenFeature;
 import com.mapbox.api.tilequery.MapboxTilequery;
 import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.FeatureCollection;
 import com.mapbox.geojson.Point;
 import com.mapbox.mapboxsdk.Mapbox;
-import com.mapbox.mapboxsdk.camera.CameraPosition;
-import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.location.LocationComponent;
 import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions;
@@ -65,10 +60,8 @@ import com.mapbox.services.android.navigation.v5.navigation.NavigationRoute;
 import com.mapbox.api.directions.v5.models.DirectionsResponse;
 import com.mapbox.api.directions.v5.models.DirectionsRoute;
 
-import androidx.cardview.widget.CardView;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
-import androidx.fragment.app.Fragment;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -89,9 +82,7 @@ import java.util.Map.Entry;
 import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import pub.devrel.easypermissions.EasyPermissions;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+
 import java.util.Locale;
 
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconAllowOverlap;
@@ -164,7 +155,7 @@ public class MapsActivity extends AppCompatActivity implements
     private long DEFAULT_MAX_WAIT_TIME = DEFAULT_INTERVAL_IN_MILLISECONDS * 5;
 
     // Variables needed to listen to location updates
-    private MainActivityLocationCallback callback = new MainActivityLocationCallback(this);
+    private MapsActivityLocationCallback callback = new MapsActivityLocationCallback(this);
 
 
     @Override
@@ -342,7 +333,7 @@ public class MapsActivity extends AppCompatActivity implements
                 addResultLayer(style);
                 addClickLayer(style);
                 addSearchLayer(style);
-
+                initSearchFab(locationComponent.getLastKnownLocation());
                 Toast.makeText(MapsActivity.this, R.string.click_on_map_instruction, Toast.LENGTH_SHORT).show();
             }
         });
@@ -357,7 +348,6 @@ public class MapsActivity extends AppCompatActivity implements
                         .accessToken(Mapbox.getAccessToken() != null ? Mapbox.getAccessToken() : getString(R.string.access_token))
                         .placeOptions(PlaceOptions.builder()
                                 .backgroundColor(Color.parseColor("#EEEEEE"))
-                                .proximity(Point.fromLngLat(point.getLongitude(), point.getLatitude()))
                                 .limit(10)
                                 .build(PlaceOptions.MODE_CARDS))
                         .build(MapsActivity.this);
@@ -370,51 +360,13 @@ public class MapsActivity extends AppCompatActivity implements
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == Activity.RESULT_OK && requestCode == REQUEST_CODE_AUTOCOMPLETE) {
+            Intent intent1 = new Intent(MapsActivity.this, NavigateActivity.class);
+            intent1.putExtra(Intent.EXTRA_INTENT, data);
+            startActivity(intent1);
 
-            // Retrieve selected location's CarmenFeature
-            CarmenFeature selectedCarmenFeature;
-            selectedCarmenFeature = PlaceAutocomplete.getPlace(data);
-
-            // Create a new FeatureCollection and add a new Feature to it using selectedCarmenFeature above.
-            // Then retrieve and update the source designated for showing a selected location's symbol layer icon
-
-            if (mapboxMap != null) {
-                Style style = mapboxMap.getStyle();
-                if (style != null) {
-                    GeoJsonSource source = style.getSourceAs(SEARCH_GEOJSON_SOURCE_ID);
-                    if (source != null) {
-                        source.setGeoJson(FeatureCollection.fromFeatures(
-                                new Feature[] {Feature.fromJson(selectedCarmenFeature.toJson())}));
-                    }
-
-                    LatLng destPoint = new LatLng(((Point) selectedCarmenFeature.geometry()).latitude(),
-                            ((Point) selectedCarmenFeature.geometry()).longitude());
-
-                    // Move map camera to the selected location
-                    mapboxMap.animateCamera(CameraUpdateFactory.newCameraPosition(
-                            new CameraPosition.Builder()
-                                    .target(destPoint)
-                                    .zoom(17)
-                                    .build()), 1000);
-                }
-                Fragment fragment = new NavigationFragment();
-                fragmentManager = getSupportFragmentManager();
-                fragmentTransaction = fragmentManager.beginTransaction();
-                FrameLayout frame  = findViewById(R.id.frame_navigation);
-                frame.removeAllViews();
-                fragmentTransaction.replace(R.id.frame_navigation, fragment);
-                fragmentTransaction.commit();
-
-                Point destinationPoint = Point.fromLngLat( ((Point)selectedCarmenFeature.geometry()).longitude(), ((Point)selectedCarmenFeature.geometry()).latitude());
-                Point originPoint = Point.fromLngLat(locationComponent.getLastKnownLocation().getLongitude(),
-                        locationComponent.getLastKnownLocation().getLatitude());
-
-                Log.d(TAG, destinationPoint.toString());
-                Log.d(TAG, originPoint.toString());
-
-                getRoute(originPoint, destinationPoint);
-            }
         }
+
+
     }
 
     public void startNavigation() {
@@ -729,12 +681,12 @@ public class MapsActivity extends AppCompatActivity implements
     }
 
 
-    private class MainActivityLocationCallback
+    private class MapsActivityLocationCallback
             implements LocationEngineCallback<LocationEngineResult> {
 
         private final WeakReference<MapsActivity> activityWeakReference;
 
-        MainActivityLocationCallback(MapsActivity activity) {
+        MapsActivityLocationCallback(MapsActivity activity) {
             this.activityWeakReference = new WeakReference<>(activity);
         }
 
@@ -750,7 +702,6 @@ public class MapsActivity extends AppCompatActivity implements
 
             if (activity != null) {
                 Location location = result.getLastLocation();
-                initSearchFab(location);
                 Log.d("LOCATION", "" +location);
 
                 if (location == null) {
