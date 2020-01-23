@@ -24,5 +24,13 @@
     <string name="exploring">Exploring</string>
     <string name="output_locations">OUTPUT LOCATIONS</string>
     <string name="navigation">NAVIGATION</string>
+    <string name="stores">Stores</string>
+    <string name="health">Health</string>
+    <string name="pubs_and_clubs">Pubs and Clubs</string>
+    <string name="banks">Banks</string>
+    <string name="hotels">Hotels</string>
+    <string name="food_and_drink">Food and Drink</string>
+    <string name="transport">Transport</string>
+    <string name="entertainment">Entertainment</string>
 
 </resources>

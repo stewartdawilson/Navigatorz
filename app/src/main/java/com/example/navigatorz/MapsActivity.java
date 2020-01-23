@@ -369,14 +369,6 @@ public class MapsActivity extends AppCompatActivity implements
 
     }
 
-    public void startNavigation() {
-        NavigationLauncherOptions options = NavigationLauncherOptions.builder()
-                .directionsRoute(currentRoute)
-                .build();
-        // Call this method with Context from within an Activity
-        NavigationLauncher.startNavigation(MapsActivity.this, options);
-    }
-
     /**
      * Add a map layer which will show marker icons for all of the Tilequery API results
      */
@@ -746,7 +738,7 @@ public class MapsActivity extends AppCompatActivity implements
 
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        announcer.speak(output,TextToSpeech.QUEUE_ADD,null,null);
+                        announcer.speak(output,TextToSpeech.QUEUE_FLUSH,null,null);
                     } else {
                         announcer.speak(String.valueOf(output), TextToSpeech.QUEUE_FLUSH, null);
                     }

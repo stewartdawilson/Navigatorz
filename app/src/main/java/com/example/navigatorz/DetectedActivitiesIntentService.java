@@ -44,6 +44,8 @@ public class DetectedActivitiesIntentService  extends IntentService {
         Intent intent = new Intent(Constants.BROADCAST_DETECTED_ACTIVITY);
         intent.putExtra("type", activity.getType());
         intent.putExtra("confidence", activity.getConfidence());
+        Log.e(TAG, "Detected activity: " + activity.getType() + ", " + activity.getConfidence());
+
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 }

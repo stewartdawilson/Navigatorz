@@ -113,13 +113,5 @@ public class CalculateDirection {
 
 
     }
-    /*
-    https://stackoverflow.com/questions/2131195/cardinal-direction-algorithm-in-java
-     */
-    private static String headingToString2(double x)
-    {
-        String[] directions = {"N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"};
-        return directions[ (int)Math.round((  ((double)x % 360) / 45)) ];
-    }
 
 }

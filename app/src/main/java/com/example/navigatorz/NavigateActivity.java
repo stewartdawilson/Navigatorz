@@ -290,7 +290,9 @@ public class NavigateActivity extends AppCompatActivity implements OnMapReadyCal
 
                         // Draw the route on the map
                         if (navigationMapRoute != null) {
-                            navigationMapRoute.removeRoute();
+                            navigationMapRoute.updateRouteArrowVisibilityTo(false);
+                            navigationMapRoute.updateRouteVisibilityTo(false);
+
                         } else {
 
                             navigationMapRoute = new NavigationMapRoute(null, mapView, mapboxMap, R.style.CustomNavigationMapRoute );

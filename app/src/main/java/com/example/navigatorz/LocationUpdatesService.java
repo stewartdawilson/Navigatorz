@@ -7,6 +7,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -20,8 +21,14 @@ import android.os.Looper;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 
+import com.google.android.gms.location.DetectedActivity;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -29,6 +36,23 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.gson.JsonObject;
+import com.mapbox.api.directions.v5.models.DirectionsResponse;
+import com.mapbox.api.directions.v5.models.DirectionsRoute;
+import com.mapbox.api.tilequery.MapboxTilequery;
+import com.mapbox.geojson.Feature;
+import com.mapbox.geojson.FeatureCollection;
+import com.mapbox.geojson.Point;
+import com.mapbox.mapboxsdk.Mapbox;
+import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.mapbox.services.android.navigation.ui.v5.route.NavigationMapRoute;
+import com.mapbox.services.android.navigation.v5.navigation.NavigationRoute;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * A bound and started service that is promoted to a foreground service when location updates have
@@ -112,6 +136,19 @@ public class LocationUpdatesService extends Service {
      */
     private Location mLocation;
 
+    private TextToSpeech announcer;
+    private boolean still = false;
+    private String roadName = "";
+    private ArrayList<Location> tilequerylocs = new ArrayList<>();
+    private HashMap<String, ArrayList<String>> poi = new HashMap<>();
+    private ArrayList<Integer> bearings_arr = new ArrayList<Integer>();
+    private ArrayList<DirectionsRoute> routes = new ArrayList<>();
+
+
+
+
+
+
     public LocationUpdatesService() {
     }
 
@@ -123,11 +160,27 @@ public class LocationUpdatesService extends Service {
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 super.onLocationResult(locationResult);
+                if (locationResult.getLastLocation() == mLocation) {
+                    Log.d(TAG, mLocation.toString() + " = " + locationResult.getLastLocation().toString());
+                    return;
+                }
+                Log.d(TAG, mLocation.toString() + " != " + locationResult.getLastLocation().toString());
                 onNewLocation(locationResult.getLastLocation());
             }
         };
 
-        createLocationRequest();
+
+
+        announcer = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(status != TextToSpeech.ERROR) {
+                    announcer.setLanguage(Locale.UK);
+                }
+            }
+        });
+
+        createLocationRequest(still);
         getLastLocation();
 
         HandlerThread handlerThread = new HandlerThread(TAG);
@@ -146,6 +199,8 @@ public class LocationUpdatesService extends Service {
             mNotificationManager.createNotificationChannel(mChannel);
         }
     }
+
+
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -306,6 +361,40 @@ public class LocationUpdatesService extends Service {
 
         mLocation = location;
 
+        if (location == null) {
+            return;
+        }
+        LatLng truncLatLng = truncateLatLng(location, 1e4);
+        Point point = Point.fromLngLat(truncLatLng.getLongitude(), truncLatLng.getLatitude());
+
+
+
+
+        makeTilequeryApiCall(point);
+        makeTilequeryApiRoadCall(point);
+
+        Log.d("LOCATION", "" +location.getBearing());
+        Integer mybearing =  Math.round(location.getBearing());
+        if(bearings_arr.size()<6) {
+            bearings_arr.add(mybearing);
+        } else {
+            bearings_arr.remove(0);
+            bearings_arr.add(mybearing);
+        }
+
+        CalculateDirection cd = new CalculateDirection(location, bearings_arr, tilequerylocs);
+        ArrayList<String> directions = cd.bearingsToDirection();
+        StringBuilder output = buildOutput(directions);
+        Log.d("ROAD", "" +roadName);
+
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            announcer.speak(output, TextToSpeech.QUEUE_ADD,null,null);
+        } else {
+            announcer.speak(String.valueOf(output), TextToSpeech.QUEUE_FLUSH, null);
+        }
+
+
         // Notify anyone listening for broadcasts about the new location.
         Intent intent = new Intent(ACTION_BROADCAST);
         intent.putExtra(EXTRA_LOCATION, location);
@@ -317,14 +406,242 @@ public class LocationUpdatesService extends Service {
         }
     }
 
+    public StringBuilder buildOutput(ArrayList<String> directions) {
+        StringBuilder poi_text = new StringBuilder();
+        int count = 0;
+        for (Map.Entry<String, ArrayList<String>> pair : poi.entrySet()) {
+            Log.d("COUNT", ""+count);
+            Log.d("PAIR", pair.getKey());
+            Log.d("DIRECTIONSIZE", ""+directions.size());
+            Log.d("DIRECTIONS", directions.get(count));
+            int distance  = (int) Math.round(routes.get(count).distance());
+            int time  = (int) Math.round(routes.get(count).duration());
+            String units = "seconds ";
+            if (time>=60) {
+                time = time/60;
+                units = "minutes ";
+            }
+            poi_text.append(pair.getKey()).append(" is ").append(distance).append("m ").append("or ").append(time).append(units).append(" on your ").append(directions.get(count)).append("\n");
+            count++;
+        }
+        return poi_text;
+    }
+
+    private LatLng truncateLatLng(Location location, double trunc) {
+        double lat = (Math.floor(location.getLatitude()*trunc))/trunc;
+        double lng = (Math.floor(location.getLongitude()*trunc))/trunc;
+        Log.d("LATLNG", "" +location.getLatitude() + " " + location.getLongitude());
+        Log.d("LATLNG", "" +location.getLatitude()*trunc + " " + (location.getLongitude())*trunc);
+        Log.d("LATLNG", "" +Math.floor(location.getLongitude()*trunc) + " " + Math.floor(location.getLatitude()*trunc));
+
+        Log.d("LATLNG", "" +lat + " " + lng);
+
+        return new LatLng(lat, lng);
+
+    }
+
+
+    /**
+     * Use the Java SDK's MapboxTilequery class to build a API request and use the API response
+     *
+     * @param point the center point that the the tilequery will originate from.
+     */
+    private void makeTilequeryApiCall(@NonNull Point point) {
+        MapboxTilequery tilequery = MapboxTilequery.builder()
+                .accessToken(getString(R.string.access_token))
+                .mapIds("mapbox.mapbox-streets-v8")
+                .query(point)
+                .radius(143)
+                .limit(8)
+                .geometry("point")
+                .dedupe(true)
+                .layers("poi_label,transit_stop_label")
+                .build();
+
+        tilequery.enqueueCall(new Callback<FeatureCollection>() {
+            @Override
+            public void onResponse(Call<FeatureCollection> call, Response<FeatureCollection> response) {
+                if (response.body() != null) {
+                    FeatureCollection responseFeatureCollection = response.body();
+                    if (responseFeatureCollection.features() != null) {
+                        List<Feature> featureList = responseFeatureCollection.features();
+                        if (featureList.isEmpty()) {
+                            Log.d(TAG, "No features");
+                        } else {
+                            tilequerylocs = new ArrayList<>();
+                            poi = new HashMap<>();
+                            Log.d("FEATURELIST-POI", featureList.toString());
+                            extractDataPOI(featureList, point);
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FeatureCollection> call, Throwable throwable) {
+                Log.d("Request failed: %s", throwable.getMessage());
+            }
+        });
+    }
+
+    /**
+     * Use the Java SDK's MapboxTilequery class to build a API request and use the API response
+     *
+     * @param point the center point that the the tilequery will originate from.
+     */
+    private void makeTilequeryApiRoadCall(@NonNull Point point) {
+        MapboxTilequery tilequery = MapboxTilequery.builder()
+                .accessToken(getString(R.string.access_token))
+                .mapIds("mapbox.mapbox-streets-v8")
+                .query(point)
+                .radius(60)
+                .limit(1)
+                .geometry("linestring")
+                .dedupe(true)
+                .layers("road")
+                .build();
+
+        tilequery.enqueueCall(new Callback<FeatureCollection>() {
+            @Override
+            public void onResponse(Call<FeatureCollection> call, Response<FeatureCollection> response) {
+                if (response.body() != null) {
+                    FeatureCollection responseFeatureCollection = response.body();
+                    if (responseFeatureCollection.features() != null) {
+                        List<Feature> featureList = responseFeatureCollection.features();
+                        if (featureList.isEmpty()) {
+                            Log.d(TAG, "No roads");
+                        } else {
+                            roadName = "";
+                            Log.d("FEATURELIST-ROAD", featureList.toString());
+                            extractDataRoad(featureList);
+
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<FeatureCollection> call, Throwable throwable) {
+                Log.d("Request failed: %s", throwable.getMessage());
+            }
+        });
+    }
+
+    public void extractDataRoad(List<Feature> featureList) {
+        for (int i =0; i<featureList.size(); i++) {
+            Feature feature = featureList.get(i);
+
+            JsonObject tile = feature.getProperty("tilequery").getAsJsonObject();
+
+            JsonObject props = feature.properties();
+            if (tile.get("layer").getAsString().equals("road") && tile.get("geometry").getAsString().equals("linestring") && props.get("name")!=null) {
+                roadName = props.get("name").getAsString();
+                break;
+            }
+        }
+    }
+
+    public void extractDataPOI(List<Feature> featureList, Point point) {
+        for (int i =0; i<featureList.size(); i++) {
+            Feature feature = featureList.get(i);
+            Log.d("ExtractDataPOI:", feature.toString());
+
+            JsonObject tile = feature.getProperty("tilequery").getAsJsonObject();
+
+            JsonObject props = feature.properties();
+            try {
+                props.get("name").getAsString();
+            } catch (Exception e) {
+                continue;
+            }
+
+            Point feature_point = (Point) feature.geometry();
+
+            if (props != null && tile != null && feature_point != null) {
+
+                String location_name = props.get("name").getAsString();
+                String location_type = "";
+                if(props.get("category_en")!=null) {
+                    location_type = props.get("category_en").getAsString();
+                }
+
+                double distance =  (double) Math.round(tile.get("distance").getAsDouble());
+
+                double longitude = feature_point.longitude();
+                double latitude = feature_point.latitude();
+
+                Location loc = new Location("");
+                loc.setLongitude(longitude);
+                loc.setLatitude(latitude);
+                tilequerylocs.add(loc);
+
+                ArrayList<String> details = new ArrayList<>();
+                details.add(location_type);
+                details.add(Double.toString(distance));
+                poi.put(location_name, details);
+
+                getRoute(point, feature_point);
+            }
+        }
+
+    }
+
+    private void getRoute(Point origin, Point destination) {
+        NavigationRoute.builder(this)
+                .accessToken(getString(R.string.access_token))
+                .origin(origin)
+                .destination(destination)
+                .profile("walking")
+                .build()
+                .getRoute(new Callback<DirectionsResponse>() {
+                    @Override
+                    public void onResponse(Call<DirectionsResponse> call, Response<DirectionsResponse> response) {
+                        // You can get the generic HTTP info about the response
+                        Log.d(TAG, "Response code: " + response.code());
+                        if (response.body() == null) {
+                            Log.e(TAG, "No routes found, make sure you set the right user and access token.");
+                            return;
+                        } else if (response.body().routes().size() < 1) {
+                            Log.e(TAG, "No routes found");
+                            return;
+                        }
+
+                        DirectionsRoute route = response.body().routes().get(0);
+
+                        routes.add(route);
+                    }
+
+                    @Override
+                    public void onFailure(Call<DirectionsResponse> call, Throwable throwable) {
+                        Log.e(TAG, "Error: " + throwable.getMessage());
+                    }
+                });
+    }
+
+
+
     /**
      * Sets the location request parameters.
+     * @param still
      */
-    private void createLocationRequest() {
+    public void createLocationRequest(boolean still) {
         mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
-        mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS);
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        if(still) {
+            Log.d(TAG, "User is still");
+            mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS*6);
+            mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS*12);
+        } else {
+            Log.e(TAG, "User not still");
+
+            mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
+            mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS);
+            mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        }
+
+    }
+
+    public void stopTTSAnoucements() {
+        announcer.stop();
     }
 
     /**

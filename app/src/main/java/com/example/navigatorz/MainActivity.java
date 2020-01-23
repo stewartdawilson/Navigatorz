@@ -16,6 +16,7 @@ import android.preference.PreferenceManager;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 
 import android.Manifest;
@@ -26,6 +27,8 @@ import android.net.Uri;
 
 import android.provider.Settings;
 import androidx.annotation.NonNull;
+
+import com.google.android.gms.location.DetectedActivity;
 import com.google.android.material.snackbar.Snackbar;
 import androidx.core.app.ActivityCompat;
 
@@ -34,6 +37,9 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * The only activity in this sample.
@@ -77,6 +83,8 @@ public class MainActivity extends AppCompatActivity implements
     // Used in checking for runtime permissions.
     private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
 
+    private int prev_type = -1;
+
     // The BroadcastReceiver used to listen from broadcasts from the service.
     private MyReceiver myReceiver;
 
@@ -90,6 +98,17 @@ public class MainActivity extends AppCompatActivity implements
     private ImageButton mRequestLocationUpdatesButton;
     private TextView mExploretxt;
     private ImageButton mNavigationButton;
+
+
+    /**
+     * The current location.
+     */
+    private Location mLocation;
+
+    BroadcastReceiver broadcastReceiver;
+
+
+
 
 
     // Monitors the state of the connection to the service.
@@ -114,6 +133,19 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         myReceiver = new MyReceiver();
         setContentView(R.layout.activity_main);
+
+        broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.getAction().equals(Constants.BROADCAST_DETECTED_ACTIVITY)) {
+                    int type = intent.getIntExtra("type", -1);
+                    int confidence = intent.getIntExtra("confidence", 0);
+                    handleUserActivity(type, confidence);
+                }
+            }
+        };
+
+        startTracking();
 
         // Check that the user hasn't revoked permissions by going to Settings.
         if (Utils.requestingLocationUpdates(this)) {
@@ -149,6 +181,7 @@ public class MainActivity extends AppCompatActivity implements
                     } else {
                         Log.i(TAG, "Stopping exploring");
                         mService.removeLocationUpdates();
+                        mService.stopTTSAnoucements();
                     }
                 }
             }
@@ -170,16 +203,51 @@ public class MainActivity extends AppCompatActivity implements
                 Context.BIND_AUTO_CREATE);
     }
 
+
+    private void startTracking() {
+        Intent intent1 = new Intent(this, BackgroundDetectedActivitiesService.class);
+        startService(intent1);
+    }
+
+    private void handleUserActivity(int type, int confidence) {
+        String label = getString(R.string.unknown_activity);
+        Log.e(TAG, "User activity: " + label + ", Confidence: " + confidence);
+
+
+        if (confidence > Constants.CONFIDENCE && type != prev_type) {
+            switch (type) {
+                case DetectedActivity.STILL: {
+                    prev_type = DetectedActivity.STILL;
+                    Log.e(TAG, "User is still");
+                    mService.removeLocationUpdates();
+                    mService.createLocationRequest(true);
+                    mService.requestLocationUpdates();
+                    break;
+                }
+                case DetectedActivity.WALKING | DetectedActivity.UNKNOWN: {
+                    prev_type = DetectedActivity.UNKNOWN;
+                    mService.removeLocationUpdates();
+                    mService.createLocationRequest(false);
+                    mService.requestLocationUpdates();
+                    break;
+                }
+            }
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
         LocalBroadcastManager.getInstance(this).registerReceiver(myReceiver,
                 new IntentFilter(LocationUpdatesService.ACTION_BROADCAST));
+        LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver,
+                new IntentFilter(Constants.BROADCAST_DETECTED_ACTIVITY));
     }
 
     @Override
     protected void onPause() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(myReceiver);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver);
         super.onPause();
     }
 
@@ -286,6 +354,14 @@ public class MainActivity extends AppCompatActivity implements
     private class MyReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, intent.getAction());
+
+            if (intent.getAction().equals(Constants.BROADCAST_DETECTED_ACTIVITY)) {
+                Log.d(TAG, "Receiving activities");
+                int type = intent.getIntExtra("type", -1);
+                int confidence = intent.getIntExtra("confidence", 0);
+                handleUserActivity(type, confidence);
+            }
             Location location = intent.getParcelableExtra(LocationUpdatesService.EXTRA_LOCATION);
             if (location != null) {
                 Toast.makeText(MainActivity.this, Utils.getLocationText(location),
