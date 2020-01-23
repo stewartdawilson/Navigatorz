@@ -161,10 +161,8 @@ public class LocationUpdatesService extends Service {
             public void onLocationResult(LocationResult locationResult) {
                 super.onLocationResult(locationResult);
                 if (locationResult.getLastLocation() == mLocation) {
-                    Log.d(TAG, mLocation.toString() + " = " + locationResult.getLastLocation().toString());
                     return;
                 }
-                Log.d(TAG, mLocation.toString() + " != " + locationResult.getLastLocation().toString());
                 onNewLocation(locationResult.getLastLocation());
             }
         };
