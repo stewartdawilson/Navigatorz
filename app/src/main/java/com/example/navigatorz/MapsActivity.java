@@ -53,8 +53,6 @@ import com.mapbox.mapboxsdk.plugins.places.autocomplete.PlaceAutocomplete;
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.model.PlaceOptions;
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
-import com.mapbox.services.android.navigation.ui.v5.NavigationLauncher;
-import com.mapbox.services.android.navigation.ui.v5.NavigationLauncherOptions;
 import com.mapbox.services.android.navigation.ui.v5.route.NavigationMapRoute;
 import com.mapbox.services.android.navigation.v5.navigation.NavigationRoute;
 import com.mapbox.api.directions.v5.models.DirectionsResponse;
@@ -170,7 +168,7 @@ public class MapsActivity extends AppCompatActivity implements
         // This contains the MapView in XML and needs to be called after the access token is configured.
         setContentView(R.layout.activity_maps);
 
-        tilequeryResponseTextView = findViewById(R.id.tilequery_response_info_textview);
+        tilequeryResponseTextView = findViewById(R.id.txt_main_annoucements);
         bearingTextView = findViewById(R.id.bearing_info_textview);
 
         txtActivity = findViewById(R.id.txtActivity);

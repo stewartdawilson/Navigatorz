@@ -19,7 +19,7 @@
         android:scaleType="fitXY"
         android:src="@drawable/ic_exploration"
         android:text="@string/explore"
-        app:layout_constraintBottom_toTopOf="@+id/tilequery_response_info_textview"
+        app:layout_constraintBottom_toTopOf="@+id/txt_main_annoucements"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.292" />
@@ -47,9 +47,9 @@
         android:layout_height="wrap_content"
         android:text="@string/output_locations"
         android:textColor="#444444"
-        android:textSize="18sp"
+        android:textSize="24sp"
         android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/tilequery_response_info_textview"
+        app:layout_constraintBottom_toTopOf="@+id/txt_main_annoucements"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.133"
         app:layout_constraintStart_toStartOf="parent"
@@ -57,7 +57,7 @@
         app:layout_constraintVertical_bias="1.0" />
 
     <TextView
-        android:id="@+id/tilequery_response_info_textview"
+        android:id="@+id/txt_main_annoucements"
         android:layout_width="410dp"
         android:layout_height="182dp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -71,7 +71,7 @@
         android:contentDescription="Maps navigation"
         android:scaleType="center"
         android:src="@drawable/ic_map"
-        app:layout_constraintBottom_toTopOf="@+id/tilequery_response_info_textview"
+        app:layout_constraintBottom_toTopOf="@+id/txt_main_annoucements"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.365"
         app:layout_constraintStart_toEndOf="@+id/request_location_updates_button"
@@ -102,7 +102,7 @@
         android:fontFamily="sans-serif-smallcaps"
         android:text="Navigatorz"
         android:textColor="#4E4E4E"
-        android:textSize="18sp"
+        android:textSize="36sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toTopOf="@+id/request_location_updates_button"
         app:layout_constraintEnd_toEndOf="parent"
@@ -112,7 +112,7 @@
         app:layout_constraintVertical_bias="0.197" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/floatingActionButton7"
+        android:id="@+id/fab_main_health"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="32dp"
@@ -127,7 +127,7 @@
         app:useCompatPadding="true" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/floatingActionButton9"
+        android:id="@+id/fab_main_transport"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:padding="0dp"
@@ -136,15 +136,15 @@
         app:backgroundTint="@android:color/background_dark"
         app:borderWidth="0dp"
         app:fabSize="normal"
-        app:layout_constraintEnd_toStartOf="@+id/floatingActionButton5"
+        app:layout_constraintEnd_toStartOf="@+id/fab_main_entertainment"
         app:layout_constraintHorizontal_bias="0.592"
-        app:layout_constraintStart_toEndOf="@+id/floatingActionButton6"
+        app:layout_constraintStart_toEndOf="@+id/fab_main_drinkfood"
         app:layout_constraintTop_toBottomOf="@+id/nav_map_button"
         app:rippleColor="#00EEEEEE"
         app:useCompatPadding="true" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/floatingActionButton6"
+        android:id="@+id/fab_main_drinkfood"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
@@ -154,13 +154,13 @@
         app:backgroundTint="@android:color/background_dark"
         app:borderWidth="0dp"
         app:fabSize="normal"
-        app:layout_constraintStart_toEndOf="@+id/floatingActionButton7"
+        app:layout_constraintStart_toEndOf="@+id/fab_main_health"
         app:layout_constraintTop_toBottomOf="@+id/request_location_updates_button"
         app:rippleColor="#00EEEEEE"
         app:useCompatPadding="true" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/floatingActionButton2"
+        android:id="@+id/fab_main_stores"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="32dp"
@@ -176,7 +176,7 @@
         app:useCompatPadding="true" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/floatingActionButton5"
+        android:id="@+id/fab_main_entertainment"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="24dp"
@@ -192,7 +192,7 @@
         app:useCompatPadding="true" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/floatingActionButton4"
+        android:id="@+id/fab_main_bars"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
@@ -202,13 +202,13 @@
         app:backgroundTint="@android:color/background_dark"
         app:borderWidth="0dp"
         app:fabSize="normal"
-        app:layout_constraintStart_toEndOf="@+id/floatingActionButton2"
+        app:layout_constraintStart_toEndOf="@+id/fab_main_stores"
         app:layout_constraintTop_toBottomOf="@+id/textView10"
         app:rippleColor="#00EEEEEE"
         app:useCompatPadding="true" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/floatingActionButton3"
+        android:id="@+id/fab_main_hotels"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="24dp"
@@ -224,7 +224,7 @@
         app:useCompatPadding="true" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/floatingActionButton8"
+        android:id="@+id/fab_main_banks"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:padding="0dp"
@@ -233,9 +233,9 @@
         app:backgroundTint="@android:color/background_dark"
         app:borderWidth="0dp"
         app:fabSize="normal"
-        app:layout_constraintEnd_toStartOf="@+id/floatingActionButton3"
+        app:layout_constraintEnd_toStartOf="@+id/fab_main_hotels"
         app:layout_constraintHorizontal_bias="0.592"
-        app:layout_constraintStart_toEndOf="@+id/floatingActionButton4"
+        app:layout_constraintStart_toEndOf="@+id/fab_main_bars"
         app:layout_constraintTop_toBottomOf="@+id/textView11"
         app:rippleColor="#00EEEEEE"
         app:useCompatPadding="true" />
@@ -246,9 +246,9 @@
         android:layout_height="wrap_content"
         android:text="@string/health"
         android:textColor="#444444"
-        app:layout_constraintEnd_toEndOf="@+id/floatingActionButton7"
-        app:layout_constraintStart_toStartOf="@+id/floatingActionButton7"
-        app:layout_constraintTop_toBottomOf="@+id/floatingActionButton7" />
+        app:layout_constraintEnd_toEndOf="@+id/fab_main_health"
+        app:layout_constraintStart_toStartOf="@+id/fab_main_health"
+        app:layout_constraintTop_toBottomOf="@+id/fab_main_health" />
 
     <TextView
         android:id="@+id/textView4"
@@ -257,9 +257,9 @@
         android:layout_marginTop="2dp"
         android:text="@string/stores"
         android:textColor="#444444"
-        app:layout_constraintEnd_toEndOf="@+id/floatingActionButton2"
-        app:layout_constraintStart_toStartOf="@+id/floatingActionButton2"
-        app:layout_constraintTop_toBottomOf="@+id/floatingActionButton2" />
+        app:layout_constraintEnd_toEndOf="@+id/fab_main_stores"
+        app:layout_constraintStart_toStartOf="@+id/fab_main_stores"
+        app:layout_constraintTop_toBottomOf="@+id/fab_main_stores" />
 
     <TextView
         android:id="@+id/textView5"
@@ -267,9 +267,9 @@
         android:layout_height="wrap_content"
         android:text="@string/pubs_and_clubs"
         android:textColor="#444444"
-        app:layout_constraintEnd_toEndOf="@+id/floatingActionButton4"
-        app:layout_constraintStart_toStartOf="@+id/floatingActionButton4"
-        app:layout_constraintTop_toBottomOf="@+id/floatingActionButton4" />
+        app:layout_constraintEnd_toEndOf="@+id/fab_main_bars"
+        app:layout_constraintStart_toStartOf="@+id/fab_main_bars"
+        app:layout_constraintTop_toBottomOf="@+id/fab_main_bars" />
 
     <TextView
         android:id="@+id/textView7"
@@ -277,9 +277,9 @@
         android:layout_height="wrap_content"
         android:text="@string/banks"
         android:textColor="#444444"
-        app:layout_constraintEnd_toEndOf="@+id/floatingActionButton8"
-        app:layout_constraintStart_toStartOf="@+id/floatingActionButton8"
-        app:layout_constraintTop_toBottomOf="@+id/floatingActionButton8" />
+        app:layout_constraintEnd_toEndOf="@+id/fab_main_banks"
+        app:layout_constraintStart_toStartOf="@+id/fab_main_banks"
+        app:layout_constraintTop_toBottomOf="@+id/fab_main_banks" />
 
     <TextView
         android:id="@+id/textView9"
@@ -287,9 +287,9 @@
         android:layout_height="wrap_content"
         android:text="@string/hotels"
         android:textColor="#444444"
-        app:layout_constraintEnd_toEndOf="@+id/floatingActionButton3"
-        app:layout_constraintStart_toStartOf="@+id/floatingActionButton3"
-        app:layout_constraintTop_toBottomOf="@+id/floatingActionButton3" />
+        app:layout_constraintEnd_toEndOf="@+id/fab_main_hotels"
+        app:layout_constraintStart_toStartOf="@+id/fab_main_hotels"
+        app:layout_constraintTop_toBottomOf="@+id/fab_main_hotels" />
 
     <TextView
         android:id="@+id/textView10"
@@ -297,9 +297,9 @@
         android:layout_height="wrap_content"
         android:text="@string/food_and_drink"
         android:textColor="#444444"
-        app:layout_constraintEnd_toEndOf="@+id/floatingActionButton6"
-        app:layout_constraintStart_toStartOf="@+id/floatingActionButton6"
-        app:layout_constraintTop_toBottomOf="@+id/floatingActionButton6" />
+        app:layout_constraintEnd_toEndOf="@+id/fab_main_drinkfood"
+        app:layout_constraintStart_toStartOf="@+id/fab_main_drinkfood"
+        app:layout_constraintTop_toBottomOf="@+id/fab_main_drinkfood" />
 
     <TextView
         android:id="@+id/textView11"
@@ -307,9 +307,9 @@
         android:layout_height="wrap_content"
         android:text="@string/transport"
         android:textColor="#444444"
-        app:layout_constraintEnd_toEndOf="@+id/floatingActionButton9"
-        app:layout_constraintStart_toStartOf="@+id/floatingActionButton9"
-        app:layout_constraintTop_toBottomOf="@+id/floatingActionButton9" />
+        app:layout_constraintEnd_toEndOf="@+id/fab_main_transport"
+        app:layout_constraintStart_toStartOf="@+id/fab_main_transport"
+        app:layout_constraintTop_toBottomOf="@+id/fab_main_transport" />
 
     <TextView
         android:id="@+id/textView12"
@@ -317,9 +317,9 @@
         android:layout_height="wrap_content"
         android:text="@string/entertainment"
         android:textColor="#444444"
-        app:layout_constraintEnd_toEndOf="@+id/floatingActionButton5"
-        app:layout_constraintStart_toStartOf="@+id/floatingActionButton5"
-        app:layout_constraintTop_toBottomOf="@+id/floatingActionButton5" />
+        app:layout_constraintEnd_toEndOf="@+id/fab_main_entertainment"
+        app:layout_constraintStart_toStartOf="@+id/fab_main_entertainment"
+        app:layout_constraintTop_toBottomOf="@+id/fab_main_entertainment" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

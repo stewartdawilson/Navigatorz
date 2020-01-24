@@ -9,14 +9,12 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
-import android.speech.tts.TextToSpeech;
 import android.util.Log;
 
 import android.Manifest;
@@ -29,17 +27,14 @@ import android.provider.Settings;
 import androidx.annotation.NonNull;
 
 import com.google.android.gms.location.DetectedActivity;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import androidx.core.app.ActivityCompat;
+import okhttp3.internal.Util;
 
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import java.util.ArrayList;
-import java.util.HashMap;
 
 /**
  * The only activity in this sample.
@@ -77,7 +72,7 @@ import java.util.HashMap;
  * notification. This dismisses the notification and stops the service.
  */
 public class MainActivity extends AppCompatActivity implements
-        SharedPreferences.OnSharedPreferenceChangeListener {
+        SharedPreferences.OnSharedPreferenceChangeListener , View.OnClickListener {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     // Used in checking for runtime permissions.
@@ -97,7 +92,20 @@ public class MainActivity extends AppCompatActivity implements
     // UI elements.
     private ImageButton mRequestLocationUpdatesButton;
     private TextView mExploretxt;
+    private TextView mAnnoucementstxt;
     private ImageButton mNavigationButton;
+    private FloatingActionButton mFabHealth;
+    private FloatingActionButton mFabFood;
+    private FloatingActionButton mFabTransport;
+    private FloatingActionButton mFabEntertainment;
+    private FloatingActionButton mFabStore;
+    private FloatingActionButton mFabBar;
+    private FloatingActionButton mFabHotel;
+    private FloatingActionButton mFabBank;
+
+
+
+
 
 
     /**
@@ -164,28 +172,30 @@ public class MainActivity extends AppCompatActivity implements
         mRequestLocationUpdatesButton = (ImageButton) findViewById(R.id.request_location_updates_button);
         mNavigationButton = (ImageButton) findViewById(R.id.nav_map_button);
 
-        mExploretxt = (TextView) findViewById(R.id.txtExplore);
+        mFabHealth = (FloatingActionButton) findViewById(R.id.fab_main_health);
+        mFabBank = (FloatingActionButton) findViewById(R.id.fab_main_banks);
+        mFabBar = (FloatingActionButton) findViewById(R.id.fab_main_bars);
+        mFabEntertainment = (FloatingActionButton) findViewById(R.id.fab_main_entertainment);
+        mFabHotel = (FloatingActionButton) findViewById(R.id.fab_main_hotels);
+        mFabFood = (FloatingActionButton) findViewById(R.id.fab_main_drinkfood);
+        mFabTransport = (FloatingActionButton) findViewById(R.id.fab_main_transport);
+        mFabStore = (FloatingActionButton) findViewById(R.id.fab_main_stores);
 
-        mRequestLocationUpdatesButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Log.d(TAG, "Exploring button pressed");
-                boolean state = Utils.requestingLocationUpdates(getApplicationContext());
-                if (!checkPermissions()) {
-                    requestPermissions();
-                } else {
-                    Log.d(TAG, "state:"+(state));
-                    if(!state) {
-                        Log.i(TAG, "Starting exploring");
-                        mService.requestLocationUpdates();
-                    } else {
-                        Log.i(TAG, "Stopping exploring");
-                        mService.removeLocationUpdates();
-                        mService.stopTTSAnoucements();
-                    }
-                }
-            }
-        });
+
+        mExploretxt = (TextView) findViewById(R.id.txtExplore);
+        mAnnoucementstxt = (TextView) findViewById(R.id.txt_main_annoucements);
+
+        mRequestLocationUpdatesButton.setOnClickListener(this);
+        mFabBank.setOnClickListener(this);
+        mFabStore.setOnClickListener(this);
+        mFabHealth.setOnClickListener(this);
+        mFabFood.setOnClickListener(this);
+        mFabTransport.setOnClickListener(this);
+        mFabBar.setOnClickListener(this);
+        mFabHotel.setOnClickListener(this);
+        mFabEntertainment.setOnClickListener(this);
+
+        Log.d(TAG, "YES YES YES");
 
         mNavigationButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -195,7 +205,17 @@ public class MainActivity extends AppCompatActivity implements
         });
 
         // Restore the state of the buttons when the activity (re)launches.
-        setButtonsState(Utils.requestingLocationUpdates(this));
+        setButtonsState(Utils.requestingLocationUpdates(this), Utils.KEY_REQUESTING_LOCATION_UPDATES);
+        setButtonsState(Utils.requestingStoreUpdates(this), Utils.KEY_REQUESTING_STORE_UPDATES);
+        setButtonsState(Utils.requestingBankUpdates(this), Utils.KEY_REQUESTING_BANK_UPDATES);
+        setButtonsState(Utils.requestingHealthUpdates(this), Utils.KEY_REQUESTING_HEALTH_UPDATES);
+        setButtonsState(Utils.requestingHotelUpdates(this), Utils.KEY_REQUESTING_HOTEL_UPDATES);
+        setButtonsState(Utils.requestingEntertainmentUpdates(this), Utils.KEY_REQUESTING_ENTERTAINMENT_UPDATES);
+        setButtonsState(Utils.requestingBarUpdates(this), Utils.KEY_REQUESTING_BAR_UPDATES);
+        setButtonsState(Utils.requestingFoodUpdates(this), Utils.KEY_REQUESTING_FOOD_UPDATES);
+        setButtonsState(Utils.requestingTransportUpdates(this), Utils.KEY_REQUESTING_TRANSPORT_UPDATES);
+
+
 
         // Bind to the service. If the service is in foreground mode, this signals to the service
         // that since this activity is in the foreground, the service can exit foreground mode.
@@ -214,7 +234,7 @@ public class MainActivity extends AppCompatActivity implements
         Log.e(TAG, "User activity: " + label + ", Confidence: " + confidence);
 
 
-        if (confidence > Constants.CONFIDENCE && type != prev_type) {
+        if (confidence > Constants.CONFIDENCE && type != prev_type && Utils.requestingLocationUpdates(this)) {
             switch (type) {
                 case DetectedActivity.STILL: {
                     prev_type = DetectedActivity.STILL;
@@ -324,7 +344,7 @@ public class MainActivity extends AppCompatActivity implements
                 mService.requestLocationUpdates();
             } else {
                 // Permission denied.
-                setButtonsState(false);
+                setButtonsState(false, Utils.KEY_REQUESTING_LOCATION_UPDATES);
                 Snackbar.make(
                         findViewById(R.id.activity_main),
                         R.string.permission_denied_explanation,
@@ -348,6 +368,138 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.request_location_updates_button:
+            {
+                Log.d(TAG, "Exploring button pressed");
+                boolean state = Utils.requestingLocationUpdates(this);
+                if (!checkPermissions()) {
+                    requestPermissions();
+                } else {
+                    Log.d(TAG, "Location state:"+state);
+                    if(!state) {
+                        Log.i(TAG, "Requesting Location Updates");
+                        mService.requestLocationUpdates();
+                    } else {
+                        Log.i(TAG, "Stopping Location Updates");
+                        mService.removeLocationUpdates();
+                        mService.stopTTSAnoucements();
+                    }
+                }
+                break;
+            }
+            case R.id.fab_main_health:
+            {
+                boolean state = Utils.requestingHealthUpdates(this);
+                Log.d(TAG, "Health State:"+state);
+                if(!state) {
+                    Log.i(TAG, "Requesting Health Updates");
+                    Utils.setHealthUpdates(this, true);
+                } else {
+                    Log.i(TAG, "Stopping Health Updates");
+                    Utils.setHealthUpdates(this, false);
+                }
+                break;
+            }
+            case R.id.fab_main_transport:
+            {
+                boolean state = Utils.requestingTransportUpdates(this);
+                Log.d(TAG, "Transport State:"+state);
+                if(!state) {
+                    Log.i(TAG, "Requesting Transport Updates");
+                    Utils.setTransportUpdates(this, true);
+                } else {
+                    Log.i(TAG, "Stopping Transport Updates");
+                    Utils.setTransportUpdates(this, false);
+                }
+                break;
+            }
+            case R.id.fab_main_stores:
+            {
+                boolean state = Utils.requestingStoreUpdates(this);
+                Log.d(TAG, "Store State:"+state);
+                if(!state) {
+                    Log.i(TAG, "Requesting Store Updates");
+                    Utils.setStoreUpdates(this, true);
+                } else {
+                    Log.i(TAG, "Stopping Store Updates");
+                    Utils.setStoreUpdates(this, false);
+                }
+                break;
+            }
+            case R.id.fab_main_hotels:
+            {
+                boolean state = Utils.requestingHotelUpdates(this);
+                Log.d(TAG, "Hotel State:"+state);
+                if(!state) {
+                    Log.i(TAG, "Requesting Hotel Updates");
+                    Utils.setHotelUpdates(this, true);
+                } else {
+                    Log.i(TAG, "Stopping Hotel Updates");
+                    Utils.setHotelUpdates(this, false);
+                }
+                break;
+            }
+            case R.id.fab_main_entertainment:
+            {
+                boolean state = Utils.requestingEntertainmentUpdates(this);
+                Log.d(TAG, "Entertainment State:"+state);
+                if(!state) {
+                    Log.i(TAG, "Requesting Entertainment Updates");
+                    Utils.setEntertainmentUpdates(this, true);
+                } else {
+                    Log.i(TAG, "Stopping Entertainment Updates");
+                    Utils.setEntertainmentUpdates(this, false);
+                }
+                break;
+            }
+            case R.id.fab_main_drinkfood:
+            {
+                boolean state = Utils.requestingFoodUpdates(this);
+                Log.d(TAG, "Food State:"+state);
+                if(!state) {
+                    Log.i(TAG, "Requesting Food Updates");
+                    Utils.setFoodUpdates(this, true);
+                } else {
+                    Log.i(TAG, "Stopping Food Updates");
+                    Utils.setFoodUpdates(this, false);
+                }
+                break;
+            }
+            case R.id.fab_main_bars:
+            {
+                boolean state = Utils.requestingBarUpdates(this);
+                Log.d(TAG, "Bar State:"+state);
+                if(!state) {
+                    Log.i(TAG, "Requesting Bar Updates");
+                    Utils.setBarUpdates(this, true);
+                } else {
+                    Log.i(TAG, "Stopping Bar Updates");
+                    Utils.setBarUpdates(this, false);
+                }
+                break;
+            }
+            case R.id.fab_main_banks:
+            {
+                boolean state = Utils.requestingBankUpdates(this);
+                Log.d(TAG, "Bank State:"+state);
+                if(!state) {
+                    Log.i(TAG, "Requesting Bank Updates");
+                    Utils.setBankUpdates(this, true);
+
+                } else {
+                    Log.i(TAG, "Stopping Bank Updates");
+                    Utils.setBankUpdates(this, false);
+                }
+                break;
+            }
+
+        }
+
+    }
+
     /**
      * Receiver for broadcasts sent by {@link LocationUpdatesService}.
      */
@@ -362,10 +514,10 @@ public class MainActivity extends AppCompatActivity implements
                 int confidence = intent.getIntExtra("confidence", 0);
                 handleUserActivity(type, confidence);
             }
-            Location location = intent.getParcelableExtra(LocationUpdatesService.EXTRA_LOCATION);
+            String location = intent.getStringExtra(LocationUpdatesService.EXTRA_LOCATION);
             if (location != null) {
-                Toast.makeText(MainActivity.this, Utils.getLocationText(location),
-                        Toast.LENGTH_SHORT).show();
+                mAnnoucementstxt.setText(location);
+
             }
         }
     }
@@ -373,24 +525,140 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
         // Update the buttons state depending on whether location updates are being requested.
-        if (s.equals(Utils.KEY_REQUESTING_LOCATION_UPDATES)) {
-            setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_LOCATION_UPDATES,
-                    false));
+        Log.d(TAG+"onSharedPreferenceChanged:", s);
+
+        switch (s) {
+            case Utils.KEY_REQUESTING_LOCATION_UPDATES: setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_LOCATION_UPDATES, false),  Utils.KEY_REQUESTING_LOCATION_UPDATES);break;
+            case Utils.KEY_REQUESTING_HEALTH_UPDATES: setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_HEALTH_UPDATES, false), Utils.KEY_REQUESTING_HEALTH_UPDATES);break;
+            case Utils.KEY_REQUESTING_BANK_UPDATES: setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_BANK_UPDATES, false), Utils.KEY_REQUESTING_BANK_UPDATES);break;
+            case Utils.KEY_REQUESTING_ENTERTAINMENT_UPDATES: setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_ENTERTAINMENT_UPDATES, false), Utils.KEY_REQUESTING_ENTERTAINMENT_UPDATES);break;
+            case Utils.KEY_REQUESTING_TRANSPORT_UPDATES: setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_TRANSPORT_UPDATES, false),  Utils.KEY_REQUESTING_TRANSPORT_UPDATES);break;
+            case Utils.KEY_REQUESTING_FOOD_UPDATES: setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_FOOD_UPDATES, false), Utils.KEY_REQUESTING_FOOD_UPDATES);break;
+            case Utils.KEY_REQUESTING_HOTEL_UPDATES: setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_HOTEL_UPDATES, false), Utils.KEY_REQUESTING_HOTEL_UPDATES);break;
+            case Utils.KEY_REQUESTING_STORE_UPDATES: setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_STORE_UPDATES, false), Utils.KEY_REQUESTING_STORE_UPDATES);break;
+            case Utils.KEY_REQUESTING_BAR_UPDATES: setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_BAR_UPDATES, false), Utils.KEY_REQUESTING_BAR_UPDATES);break;
         }
+
     }
 
-    private void setButtonsState(boolean requestingLocationUpdates) {
-        Log.d(TAG, requestingLocationUpdates+"");
-        if (requestingLocationUpdates) {
-            Log.d(TAG, "Change buttons to yellow");
-            mRequestLocationUpdatesButton.setColorFilter(Color.BLACK);
-            mExploretxt.setTextColor(Color.BLACK);
-            mRequestLocationUpdatesButton.setBackground(getDrawable(R.drawable.roundcorneryellow));
-        } else {
-            Log.d(TAG, "Change buttons to black");
-            mRequestLocationUpdatesButton.setColorFilter(Color.WHITE);
-            mExploretxt.setTextColor(Color.WHITE);
-            mRequestLocationUpdatesButton.setBackground(getDrawable(R.drawable.roundcornerblack));
+
+    private void setButtonsState(boolean requestingUpdates, String button_pressed) {
+        Log.d(TAG, requestingUpdates+"");
+        Log.d(TAG, "setButtonsState:"+button_pressed);
+
+        switch (button_pressed) {
+            case Utils.KEY_REQUESTING_LOCATION_UPDATES: {
+                if (requestingUpdates) {
+                    Log.d(TAG, "Change buttons to yellow");
+                    mRequestLocationUpdatesButton.setColorFilter(Color.BLACK);
+                    mExploretxt.setTextColor(Color.BLACK);
+                    mRequestLocationUpdatesButton.setBackground(getDrawable(R.drawable.roundcorneryellow));
+                } else {
+                    Log.d(TAG, "Change buttons to black");
+                    mRequestLocationUpdatesButton.setColorFilter(Color.WHITE);
+                    mExploretxt.setTextColor(Color.WHITE);
+                    mRequestLocationUpdatesButton.setBackground(getDrawable(R.drawable.roundcornerblack));
+                }
+                break;
+            }
+            case Utils.KEY_REQUESTING_HEALTH_UPDATES: {
+                if (requestingUpdates) {
+                    Log.d(TAG, "Change buttons to yellow");
+                    mFabHealth.setImageTintList(ColorStateList.valueOf(Color.BLACK));
+                    mFabHealth.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.yellow, null)));
+                } else {
+                    Log.d(TAG, "Change buttons to black");
+                    mFabHealth.setImageTintList(ColorStateList.valueOf(Color.WHITE));
+                    mFabHealth.setBackgroundTintList(ColorStateList.valueOf(Color.BLACK));
+                }
+                break;
+            }
+            case Utils.KEY_REQUESTING_BANK_UPDATES: {
+                if (requestingUpdates) {
+                    Log.d(TAG, "Change buttons to yellow");
+                    mFabBank.setImageTintList(ColorStateList.valueOf(Color.BLACK));
+                    mFabBank.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.yellow, null)));
+                } else {
+                    Log.d(TAG, "Change buttons to black");
+                    mFabBank.setImageTintList(ColorStateList.valueOf(Color.WHITE));
+                    mFabBank.setBackgroundTintList(ColorStateList.valueOf(Color.BLACK));
+                }
+                break;
+            }
+            case Utils.KEY_REQUESTING_FOOD_UPDATES: {
+                if (requestingUpdates) {
+                    Log.d(TAG, "Change buttons to yellow");
+                    mFabFood.setImageTintList(ColorStateList.valueOf(Color.BLACK));
+                    mFabFood.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.yellow, null)));
+                } else {
+                    Log.d(TAG, "Change buttons to black");
+                    mFabFood.setImageTintList(ColorStateList.valueOf(Color.WHITE));
+                    mFabFood.setBackgroundTintList(ColorStateList.valueOf(Color.BLACK));
+                }
+                break;
+            }
+            case Utils.KEY_REQUESTING_TRANSPORT_UPDATES: {
+                if (requestingUpdates) {
+                    Log.d(TAG, "Change buttons to yellow");
+                    mFabTransport.setImageTintList(ColorStateList.valueOf(Color.BLACK));
+                    mFabTransport.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.yellow, null)));
+                } else {
+                    Log.d(TAG, "Change buttons to black");
+                    mFabTransport.setImageTintList(ColorStateList.valueOf(Color.WHITE));
+                    mFabTransport.setBackgroundTintList(ColorStateList.valueOf(Color.BLACK));
+                }
+                break;
+            }
+            case Utils.KEY_REQUESTING_STORE_UPDATES: {
+                if (requestingUpdates) {
+                    Log.d(TAG, "Change buttons to yellow");
+                    mFabStore.setImageTintList(ColorStateList.valueOf(Color.BLACK));
+                    mFabStore.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.yellow, null)));
+                } else {
+                    Log.d(TAG, "Change buttons to black");
+                    mFabStore.setImageTintList(ColorStateList.valueOf(Color.WHITE));
+                    mFabStore.setBackgroundTintList(ColorStateList.valueOf(Color.BLACK));
+                }
+                break;
+            }
+            case Utils.KEY_REQUESTING_HOTEL_UPDATES: {
+                if (requestingUpdates) {
+                    Log.d(TAG, "Change buttons to yellow");
+                    mFabHotel.setImageTintList(ColorStateList.valueOf(Color.BLACK));
+                    mFabHotel.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.yellow, null)));
+                } else {
+                    Log.d(TAG, "Change buttons to black");
+                    mFabHotel.setImageTintList(ColorStateList.valueOf(Color.WHITE));
+                    mFabHotel.setBackgroundTintList(ColorStateList.valueOf(Color.BLACK));
+                }
+                break;
+            }
+            case Utils.KEY_REQUESTING_BAR_UPDATES: {
+                if (requestingUpdates) {
+                    Log.d(TAG, "Change buttons to yellow");
+                    mFabBar.setImageTintList(ColorStateList.valueOf(Color.BLACK));
+                    mFabBar.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.yellow, null)));
+                } else {
+                    Log.d(TAG, "Change buttons to black");
+                    mFabBar.setImageTintList(ColorStateList.valueOf(Color.WHITE));
+                    mFabBar.setBackgroundTintList(ColorStateList.valueOf(Color.BLACK));
+                }
+                break;
+            }
+            case Utils.KEY_REQUESTING_ENTERTAINMENT_UPDATES: {
+                if (requestingUpdates) {
+                    Log.d(TAG, "Change buttons to yellow");
+                    mFabEntertainment.setImageTintList(ColorStateList.valueOf(Color.BLACK));
+                    mFabEntertainment.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.yellow, null)));
+                } else {
+                    Log.d(TAG, "Change buttons to black");
+                    mFabEntertainment.setImageTintList(ColorStateList.valueOf(Color.WHITE));
+                    mFabEntertainment.setBackgroundTintList(ColorStateList.valueOf(Color.BLACK));
+                }
+                break;
+            }
+
         }
+
     }
 }

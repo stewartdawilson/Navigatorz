@@ -149,7 +149,7 @@
                 android:layout_marginRight="8dp">
 
                 <TextView
-                    android:id="@+id/tilequery_response_info_textview"
+                    android:id="@+id/txt_main_annoucements"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
 

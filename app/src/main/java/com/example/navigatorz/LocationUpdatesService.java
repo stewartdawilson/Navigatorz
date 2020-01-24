@@ -12,6 +12,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.location.Location;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
@@ -48,11 +52,13 @@ import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.services.android.navigation.ui.v5.route.NavigationMapRoute;
 import com.mapbox.services.android.navigation.v5.navigation.NavigationRoute;
 
+import java.util.AbstractQueue;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Queue;
 
 /**
  * A bound and started service that is promoted to a foreground service when location updates have
@@ -143,7 +149,7 @@ public class LocationUpdatesService extends Service {
     private HashMap<String, ArrayList<String>> poi = new HashMap<>();
     private ArrayList<Integer> bearings_arr = new ArrayList<Integer>();
     private ArrayList<DirectionsRoute> routes = new ArrayList<>();
-
+    private Ringtone r;
 
 
 
@@ -185,6 +191,10 @@ public class LocationUpdatesService extends Service {
         handlerThread.start();
         mServiceHandler = new Handler(handlerThread.getLooper());
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
+        Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        r = RingtoneManager.getRingtone(getApplicationContext(), notification);
+
 
         // Android O requires a Notification Channel.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -382,30 +392,33 @@ public class LocationUpdatesService extends Service {
 
         CalculateDirection cd = new CalculateDirection(location, bearings_arr, tilequerylocs);
         ArrayList<String> directions = cd.bearingsToDirection();
-        StringBuilder output = buildOutput(directions);
+        ArrayList<String> messages = buildOutput(directions);
         Log.d("ROAD", "" +roadName);
 
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            announcer.speak(output, TextToSpeech.QUEUE_ADD,null,null);
-        } else {
-            announcer.speak(String.valueOf(output), TextToSpeech.QUEUE_FLUSH, null);
-        }
 
 
-        // Notify anyone listening for broadcasts about the new location.
-        Intent intent = new Intent(ACTION_BROADCAST);
-        intent.putExtra(EXTRA_LOCATION, location);
-        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+        for (String msg : messages) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                announcer.speak(msg, TextToSpeech.QUEUE_ADD,null,null);
+            } else {
+                announcer.speak(msg, TextToSpeech.QUEUE_FLUSH, null);
+            }
 
-        // Update notification content if running as a foreground service.
-        if (serviceIsRunningInForeground(this)) {
-            mNotificationManager.notify(NOTIFICATION_ID, getNotification());
+            // Notify anyone listening for broadcasts about the new location.
+            Intent intent = new Intent(ACTION_BROADCAST);
+            intent.putExtra(EXTRA_LOCATION, msg);
+            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+
+            // Update notification content if running as a foreground service.
+            if (serviceIsRunningInForeground(this)) {
+                mNotificationManager.notify(NOTIFICATION_ID, getNotification());
+            }
         }
     }
 
-    public StringBuilder buildOutput(ArrayList<String> directions) {
-        StringBuilder poi_text = new StringBuilder();
+    public ArrayList<String> buildOutput(ArrayList<String> directions) {
+        ArrayList<String> poi_text = new ArrayList<>();
         int count = 0;
         for (Map.Entry<String, ArrayList<String>> pair : poi.entrySet()) {
             Log.d("COUNT", ""+count);
@@ -414,12 +427,12 @@ public class LocationUpdatesService extends Service {
             Log.d("DIRECTIONS", directions.get(count));
             int distance  = (int) Math.round(routes.get(count).distance());
             int time  = (int) Math.round(routes.get(count).duration());
-            String units = "seconds ";
+            String units = " seconds";
             if (time>=60) {
                 time = time/60;
-                units = "minutes ";
+                units = " minutes";
             }
-            poi_text.append(pair.getKey()).append(" is ").append(distance).append("m ").append("or ").append(time).append(units).append(" on your ").append(directions.get(count)).append("\n");
+            poi_text.add(pair.getKey() + " is " + distance + "m " + "or " + time + units + " on your " + directions.get(count)+"\n");
             count++;
         }
         return poi_text;
@@ -555,6 +568,8 @@ public class LocationUpdatesService extends Service {
 
             Point feature_point = (Point) feature.geometry();
 
+            
+
             if (props != null && tile != null && feature_point != null) {
 
                 String location_name = props.get("name").getAsString();
@@ -640,6 +655,7 @@ public class LocationUpdatesService extends Service {
 
     public void stopTTSAnoucements() {
         announcer.stop();
+
     }
 
     /**
