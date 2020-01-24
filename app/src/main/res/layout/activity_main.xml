@@ -246,6 +246,7 @@
         android:layout_height="wrap_content"
         android:text="@string/health"
         android:textColor="#444444"
+        android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="@+id/fab_main_health"
         app:layout_constraintStart_toStartOf="@+id/fab_main_health"
         app:layout_constraintTop_toBottomOf="@+id/fab_main_health" />
@@ -257,6 +258,7 @@
         android:layout_marginTop="2dp"
         android:text="@string/stores"
         android:textColor="#444444"
+        android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="@+id/fab_main_stores"
         app:layout_constraintStart_toStartOf="@+id/fab_main_stores"
         app:layout_constraintTop_toBottomOf="@+id/fab_main_stores" />
@@ -265,8 +267,9 @@
         android:id="@+id/textView5"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/pubs_and_clubs"
+        android:text="@string/bars"
         android:textColor="#444444"
+        android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="@+id/fab_main_bars"
         app:layout_constraintStart_toStartOf="@+id/fab_main_bars"
         app:layout_constraintTop_toBottomOf="@+id/fab_main_bars" />
@@ -277,6 +280,7 @@
         android:layout_height="wrap_content"
         android:text="@string/banks"
         android:textColor="#444444"
+        android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="@+id/fab_main_banks"
         app:layout_constraintStart_toStartOf="@+id/fab_main_banks"
         app:layout_constraintTop_toBottomOf="@+id/fab_main_banks" />
@@ -287,6 +291,7 @@
         android:layout_height="wrap_content"
         android:text="@string/hotels"
         android:textColor="#444444"
+        android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="@+id/fab_main_hotels"
         app:layout_constraintStart_toStartOf="@+id/fab_main_hotels"
         app:layout_constraintTop_toBottomOf="@+id/fab_main_hotels" />
@@ -295,8 +300,9 @@
         android:id="@+id/textView10"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/food_and_drink"
+        android:text="@string/food"
         android:textColor="#444444"
+        android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="@+id/fab_main_drinkfood"
         app:layout_constraintStart_toStartOf="@+id/fab_main_drinkfood"
         app:layout_constraintTop_toBottomOf="@+id/fab_main_drinkfood" />
@@ -307,6 +313,7 @@
         android:layout_height="wrap_content"
         android:text="@string/transport"
         android:textColor="#444444"
+        android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="@+id/fab_main_transport"
         app:layout_constraintStart_toStartOf="@+id/fab_main_transport"
         app:layout_constraintTop_toBottomOf="@+id/fab_main_transport" />
@@ -315,8 +322,9 @@
         android:id="@+id/textView12"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/entertainment"
+        android:text="@string/activities"
         android:textColor="#444444"
+        android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="@+id/fab_main_entertainment"
         app:layout_constraintStart_toStartOf="@+id/fab_main_entertainment"
         app:layout_constraintTop_toBottomOf="@+id/fab_main_entertainment" />

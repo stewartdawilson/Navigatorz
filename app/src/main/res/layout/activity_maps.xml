@@ -96,13 +96,15 @@
                 android:layout_width="82dp"
                 android:layout_height="79dp"
                 android:clickable="true"
+                android:scaleType="centerInside"
+                mapbox:fabSize="normal"
                 mapbox:layout_constraintBottom_toBottomOf="parent"
                 mapbox:layout_constraintEnd_toEndOf="parent"
                 mapbox:layout_constraintHorizontal_bias="0.981"
                 mapbox:layout_constraintStart_toStartOf="parent"
                 mapbox:layout_constraintTop_toBottomOf="@+id/btnStopTracking"
                 mapbox:layout_constraintVertical_bias="0.422"
-                mapbox:srcCompat="@android:color/holo_red_dark" />
+                mapbox:srcCompat="@android:drawable/ic_search_category_default" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

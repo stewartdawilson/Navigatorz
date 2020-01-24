@@ -20,17 +20,17 @@
     <string name="ok">Ok</string>
     <string name="permission_denied_explanation">we cant</string>
     <string name="settings">settings</string>
-    <string name="explore">EXPLORE</string>
+    <string name="explore">Explore</string>
     <string name="exploring">Exploring</string>
     <string name="output_locations">Output Location</string>
-    <string name="navigation">NAVIGATION</string>
+    <string name="navigation">Navigation</string>
     <string name="stores">Stores</string>
     <string name="health">Health</string>
-    <string name="pubs_and_clubs">Pubs and Clubs</string>
+    <string name="bars">Bars</string>
     <string name="banks">Banks</string>
     <string name="hotels">Hotels</string>
-    <string name="food_and_drink">Food and Drink</string>
+    <string name="food">Food</string>
     <string name="transport">Transport</string>
-    <string name="entertainment">Entertainment</string>
+    <string name="activities">Activities</string>
 
 </resources>

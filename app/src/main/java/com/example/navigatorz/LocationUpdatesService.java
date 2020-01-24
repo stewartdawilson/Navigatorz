@@ -568,7 +568,7 @@ public class LocationUpdatesService extends Service {
 
             Point feature_point = (Point) feature.geometry();
 
-            
+
 
             if (props != null && tile != null && feature_point != null) {
 

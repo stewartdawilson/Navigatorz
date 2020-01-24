@@ -37,7 +37,6 @@
             android:name=".DetectedActivitiesIntentService"
             android:exported="false" />
         <service android:name=".BackgroundDetectedActivitiesService" />
-        <service android:name=".LocationService" />
         <service android:name=".LocationUpdatesService" />
     </application>
 
