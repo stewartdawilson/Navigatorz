@@ -10,11 +10,14 @@ import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.location.Location;
+import android.os.Build;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
 
 import android.Manifest;
@@ -35,6 +38,12 @@ import okhttp3.internal.Util;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Random;
 
 /**
  * The only activity in this sample.
@@ -72,7 +81,7 @@ import android.widget.TextView;
  * notification. This dismisses the notification and stops the service.
  */
 public class MainActivity extends AppCompatActivity implements
-        SharedPreferences.OnSharedPreferenceChangeListener , View.OnClickListener {
+        SharedPreferences.OnSharedPreferenceChangeListener, View.OnClickListener {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     // Used in checking for runtime permissions.
@@ -102,6 +111,14 @@ public class MainActivity extends AppCompatActivity implements
     private FloatingActionButton mFabBar;
     private FloatingActionButton mFabHotel;
     private FloatingActionButton mFabBank;
+
+    private boolean initialized;
+    private String queuedText;
+    private TextToSpeech tts;
+    private String msg;
+    String mostRecentUtteranceID;
+    private HashMap<String, String> points = new HashMap<>();
+
 
 
 
@@ -142,6 +159,20 @@ public class MainActivity extends AppCompatActivity implements
         myReceiver = new MyReceiver();
         setContentView(R.layout.activity_main);
 
+        tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(tts.getEngines().size() == 0){
+                    Toast.makeText(MainActivity.this,"No Engines Installed",Toast.LENGTH_LONG).show();
+                }else{
+                    if (status == TextToSpeech.SUCCESS){
+                        tts.setLanguage(Locale.UK);
+                        ttsInitialized();
+                    }
+                }
+            }
+        });
+
         broadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -161,6 +192,33 @@ public class MainActivity extends AppCompatActivity implements
                 requestPermissions();
             }
         }
+    }
+
+    private void ttsInitialized() {
+        tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+            @Override
+            public void onStart(String utteranceId) {
+                Log.d(TAG, utteranceId+" "+msg);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        // *** toast will not work if called from a background thread ***
+                        mAnnoucementstxt.setText(points.get(utteranceId));
+                    }
+                });
+
+            }
+
+            @Override
+            // this method will always called from a background thread.
+            public void onDone(String utteranceId) {
+            }
+
+            @Override
+            public void onError(String utteranceId) {
+
+            }
+        });
     }
 
     @Override
@@ -222,7 +280,6 @@ public class MainActivity extends AppCompatActivity implements
         bindService(new Intent(this, LocationUpdatesService.class), mServiceConnection,
                 Context.BIND_AUTO_CREATE);
     }
-
 
     private void startTracking() {
         Intent intent1 = new Intent(this, BackgroundDetectedActivitiesService.class);
@@ -385,7 +442,7 @@ public class MainActivity extends AppCompatActivity implements
                     } else {
                         Log.i(TAG, "Stopping Location Updates");
                         mService.removeLocationUpdates();
-                        mService.stopTTSAnoucements();
+                        tts.stop();
                     }
                 }
                 break;
@@ -397,6 +454,7 @@ public class MainActivity extends AppCompatActivity implements
                 if(!state) {
                     Log.i(TAG, "Requesting Health Updates");
                     Utils.setHealthUpdates(this, true);
+
                 } else {
                     Log.i(TAG, "Stopping Health Updates");
                     Utils.setHealthUpdates(this, false);
@@ -499,7 +557,6 @@ public class MainActivity extends AppCompatActivity implements
         }
 
     }
-
     /**
      * Receiver for broadcasts sent by {@link LocationUpdatesService}.
      */
@@ -514,12 +571,24 @@ public class MainActivity extends AppCompatActivity implements
                 int confidence = intent.getIntExtra("confidence", 0);
                 handleUserActivity(type, confidence);
             }
-            String location = intent.getStringExtra(LocationUpdatesService.EXTRA_LOCATION);
-            if (location != null) {
-                mAnnoucementstxt.setText(location);
-
+            ArrayList<String> messages = intent.getStringArrayListExtra(LocationUpdatesService.EXTRA_LOCATION);
+            points = new HashMap<>();
+            for (String m : messages) {
+                speak(m);
             }
         }
+    }
+
+    private void speak(String m) {
+        // set unique utterance ID for each utterance
+        mostRecentUtteranceID = (new Random().nextInt() % 9999999) + ""; // "" is String force
+
+        // set params
+        // *** this method will work for more devices: API 19+ ***
+        HashMap<String, String> params = new HashMap<>();
+        points.put(mostRecentUtteranceID, m);
+        params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, mostRecentUtteranceID);
+        tts.speak(m,TextToSpeech.QUEUE_ADD,params);
     }
 
     @Override

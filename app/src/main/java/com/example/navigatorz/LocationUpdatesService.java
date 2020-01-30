@@ -175,14 +175,6 @@ public class LocationUpdatesService extends Service {
 
 
 
-        announcer = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
-            @Override
-            public void onInit(int status) {
-                if(status != TextToSpeech.ERROR) {
-                    announcer.setLanguage(Locale.UK);
-                }
-            }
-        });
 
         createLocationRequest(still);
         getLastLocation();
@@ -375,46 +367,8 @@ public class LocationUpdatesService extends Service {
         LatLng truncLatLng = truncateLatLng(location, 1e4);
         Point point = Point.fromLngLat(truncLatLng.getLongitude(), truncLatLng.getLatitude());
 
-
-
-
         makeTilequeryApiCall(point);
         makeTilequeryApiRoadCall(point);
-
-        Log.d("LOCATION", "" +location.getBearing());
-        Integer mybearing =  Math.round(location.getBearing());
-        if(bearings_arr.size()<6) {
-            bearings_arr.add(mybearing);
-        } else {
-            bearings_arr.remove(0);
-            bearings_arr.add(mybearing);
-        }
-
-        CalculateDirection cd = new CalculateDirection(location, bearings_arr, tilequerylocs);
-        ArrayList<String> directions = cd.bearingsToDirection();
-        ArrayList<String> messages = buildOutput(directions);
-        Log.d("ROAD", "" +roadName);
-
-
-
-
-        for (String msg : messages) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                announcer.speak(msg, TextToSpeech.QUEUE_ADD,null,null);
-            } else {
-                announcer.speak(msg, TextToSpeech.QUEUE_FLUSH, null);
-            }
-
-            // Notify anyone listening for broadcasts about the new location.
-            Intent intent = new Intent(ACTION_BROADCAST);
-            intent.putExtra(EXTRA_LOCATION, msg);
-            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
-
-            // Update notification content if running as a foreground service.
-            if (serviceIsRunningInForeground(this)) {
-                mNotificationManager.notify(NOTIFICATION_ID, getNotification());
-            }
-        }
     }
 
     public ArrayList<String> buildOutput(ArrayList<String> directions) {
@@ -425,15 +379,18 @@ public class LocationUpdatesService extends Service {
             Log.d("PAIR", pair.getKey());
             Log.d("DIRECTIONSIZE", ""+directions.size());
             Log.d("DIRECTIONS", directions.get(count));
-            int distance  = (int) Math.round(routes.get(count).distance());
-            int time  = (int) Math.round(routes.get(count).duration());
-            String units = " seconds";
-            if (time>=60) {
-                time = time/60;
-                units = " minutes";
+            if(!routes.isEmpty()) {
+                int distance  = (int) Math.round(routes.get(count).distance());
+                int time  = (int) Math.round(routes.get(count).duration());
+                String units = " seconds";
+                if (time>=60) {
+                    time = time/60;
+                    units = " minutes";
+                }
+                poi_text.add(pair.getKey() + " is " + distance + "m " + "or " + time + units + " on your " + directions.get(count)+"\n");
+                count++;
             }
-            poi_text.add(pair.getKey() + " is " + distance + "m " + "or " + time + units + " on your " + directions.get(count)+"\n");
-            count++;
+
         }
         return poi_text;
     }
@@ -462,8 +419,8 @@ public class LocationUpdatesService extends Service {
                 .accessToken(getString(R.string.access_token))
                 .mapIds("mapbox.mapbox-streets-v8")
                 .query(point)
-                .radius(143)
-                .limit(8)
+                .radius(50)
+                .limit(4)
                 .geometry("point")
                 .dedupe(true)
                 .layers("poi_label,transit_stop_label")
@@ -567,36 +524,139 @@ public class LocationUpdatesService extends Service {
             }
 
             Point feature_point = (Point) feature.geometry();
+            JsonObject tilequery = (JsonObject) props.get("tilequery");
+
+            ArrayList<ArrayList<String>> filters = checkLocationTypeFilters();
+
+            ArrayList<String> classes = filters.get(0);
+            ArrayList<String> category = filters.get(1);
+            ArrayList<String> transit = filters.get(2);
 
 
-
-            if (props != null && tile != null && feature_point != null) {
-
-                String location_name = props.get("name").getAsString();
-                String location_type = "";
-                if(props.get("category_en")!=null) {
-                    location_type = props.get("category_en").getAsString();
-                }
-
-                double distance =  (double) Math.round(tile.get("distance").getAsDouble());
-
-                double longitude = feature_point.longitude();
-                double latitude = feature_point.latitude();
-
-                Location loc = new Location("");
-                loc.setLongitude(longitude);
-                loc.setLatitude(latitude);
-                tilequerylocs.add(loc);
-
+            if (props != null && tile != null && feature_point != null && tilequery != null) {
                 ArrayList<String> details = new ArrayList<>();
-                details.add(location_type);
-                details.add(Double.toString(distance));
-                poi.put(location_name, details);
+                if(props.get("category_en")!=null) {
+                    String location_type = props.get("category_en").getAsString();
+                    details.add(location_type);
 
-                getRoute(point, feature_point);
+                } else {
+                    String location_type = "";
+                    details.add(location_type);
+                }
+                if(!classes.isEmpty() || !category.isEmpty() || !transit.isEmpty()) {
+                    if(classes.contains(props.get("class").getAsString()) || category.contains(props.get("category_en").getAsString()) || transit.contains(tilequery.get("layer").getAsString())) {
+                        Log.d(TAG, "Is accepted");
+                        String location_name = props.get("name").getAsString();
+
+                        double distance =  (double) Math.round(tile.get("distance").getAsDouble());
+
+                        double longitude = feature_point.longitude();
+                        double latitude = feature_point.latitude();
+
+                        Location loc = new Location("");
+                        loc.setLongitude(longitude);
+                        loc.setLatitude(latitude);
+                        tilequerylocs.add(loc);
+
+
+                        details.add(Double.toString(distance));
+                        poi.put(location_name, details);
+
+                        getRoute(point, feature_point);
+                    } else {
+                        Log.d(TAG, "Not accepted");
+                    }
+                } else {
+                    Log.d(TAG, "No filters");
+                    String location_name = props.get("name").getAsString();
+
+
+                    double distance =  (double) Math.round(tile.get("distance").getAsDouble());
+
+                    double longitude = feature_point.longitude();
+                    double latitude = feature_point.latitude();
+
+                    Location loc = new Location("");
+                    loc.setLongitude(longitude);
+                    loc.setLatitude(latitude);
+                    tilequerylocs.add(loc);
+
+
+                    details.add(Double.toString(distance));
+                    poi.put(location_name, details);
+
+                    getRoute(point, feature_point);
+                }
             }
         }
+        processLocations();
 
+    }
+
+    private void processLocations() {
+        Log.d("LOCATION", "" +mLocation.getBearing());
+        Integer mybearing =  Math.round(mLocation.getBearing());
+        if(bearings_arr.size()<6) {
+            bearings_arr.add(mybearing);
+        } else {
+            bearings_arr.remove(0);
+            bearings_arr.add(mybearing);
+        }
+
+        Log.d(TAG+":tilequerylocs", tilequerylocs.toString());
+
+        CalculateDirection cd = new CalculateDirection(mLocation, bearings_arr, tilequerylocs);
+        ArrayList<String> directions = cd.bearingsToDirection();
+        ArrayList<String> messages = buildOutput(directions);
+        Log.d("ROAD", "" +roadName);
+
+        // Notify anyone listening for broadcasts about the new location.
+        Intent intent = new Intent(ACTION_BROADCAST);
+        intent.putExtra(EXTRA_LOCATION, messages);
+        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+
+        // Update notification content if running as a foreground service.
+        if (serviceIsRunningInForeground(this)) {
+            mNotificationManager.notify(NOTIFICATION_ID, getNotification());
+        }
+    }
+
+    private ArrayList<ArrayList<String>> checkLocationTypeFilters() {
+        ArrayList<String> classes = new ArrayList<>();
+        ArrayList<String> category = new ArrayList<>();
+        ArrayList<String> transit = new ArrayList<>();
+        if(Utils.requestingHealthUpdates(this)) {
+            classes.add("medical");
+        }
+        if(Utils.requestingHotelUpdates(this)) {
+            classes.add("lodging");
+        }
+        if(Utils.requestingBankUpdates(this)){
+            category.add("Bank");
+        }
+        if(Utils.requestingBarUpdates(this)) {
+            category.add("Pub");
+            category.add("Nightclub");
+            category.add("Bar");
+        }
+        if(Utils.requestingTransportUpdates(this)) {
+            transit.add("transit_stop_label");
+        }
+        if(Utils.requestingEntertainmentUpdates(this)) {
+            classes.add("arts_and_entertainment");
+        }
+        if(Utils.requestingStoreUpdates(this)) {
+            classes.add("store_like");
+        }
+        if(Utils.requestingFoodUpdates(this)) {
+            classes.add("food_and_drink");
+            classes.add("food_and_drink_stores");
+        }
+        ArrayList<ArrayList<String>> filters = new ArrayList<>();
+        filters.add(classes);
+        filters.add(category);
+        filters.add(transit);
+        return filters;
     }
 
     private void getRoute(Point origin, Point destination) {
@@ -646,15 +706,10 @@ public class LocationUpdatesService extends Service {
         } else {
             Log.e(TAG, "User not still");
 
-            mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
-            mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS);
+            mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS*2);
+            mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS*2);
             mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         }
-
-    }
-
-    public void stopTTSAnoucements() {
-        announcer.stop();
 
     }
 
