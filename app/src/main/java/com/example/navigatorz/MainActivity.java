@@ -111,6 +111,7 @@ public class MainActivity extends AppCompatActivity implements
     private FloatingActionButton mFabBar;
     private FloatingActionButton mFabHotel;
     private FloatingActionButton mFabBank;
+    private ImageButton mSettingsButton;
 
     private boolean initialized;
     private String queuedText;
@@ -238,6 +239,7 @@ public class MainActivity extends AppCompatActivity implements
         mFabFood = (FloatingActionButton) findViewById(R.id.fab_main_drinkfood);
         mFabTransport = (FloatingActionButton) findViewById(R.id.fab_main_transport);
         mFabStore = (FloatingActionButton) findViewById(R.id.fab_main_stores);
+        mSettingsButton = (ImageButton) findViewById(R.id.button_main_settings);
 
 
         mExploretxt = (TextView) findViewById(R.id.txtExplore);
@@ -259,6 +261,12 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onClick(View view) {
                 startActivity(new Intent(MainActivity.this, MapsActivity.class));
+            }
+        });
+        mSettingsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(MainActivity.this, SettingsActivity.class));
             }
         });
 

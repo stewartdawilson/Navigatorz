@@ -1,0 +1,58 @@
+<resources>
+    <!-- Reply Preference -->
+    <string-array name="reply_entries">
+        <item>Reply</item>
+        <item>Reply to all</item>
+    </string-array>
+
+    <string-array name="reply_values">
+        <item>reply</item>
+        <item>reply_all</item>
+    </string-array>
+
+    <string-array name="announcement_format_entries_array">
+        <item>Cardinal directions (degrees)</item>
+
+        <item>Relative direction (Right, left…)</item>
+    </string-array>
+
+
+    <string-array name="announcement_format_values_array">
+        <item>Cardinal True</item>
+
+        <item>Relative True</item>
+    </string-array>
+
+    <string-array name="announcement_type_entries_array">
+        <item>Distance (meters)</item>
+
+        <item>Time (seconds,minutes,hours)</item>
+    </string-array>
+
+
+    <string-array name="announcement_type_values_array">
+        <item>Dist True</item>
+
+        <item>Time True</item>
+    </string-array>
+
+    <string-array name="tts_speed_entries_array">
+        <item>Very slow</item>
+        <item>Slow</item>
+        <item>Normal</item>
+        <item>Fast</item>
+        <item>Faster</item>
+        <item>Very Fast</item>
+    </string-array>
+
+
+    <string-array name="tts_speed_values_array">
+        <item>0.25</item>
+        <item>0.5</item>
+        <item>1.0</item>
+        <item>1.25</item>
+        <item>1.5</item>
+        <item>2.0</item>
+    </string-array>
+
+</resources>
