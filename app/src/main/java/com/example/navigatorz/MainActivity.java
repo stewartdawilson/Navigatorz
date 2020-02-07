@@ -111,6 +111,8 @@ public class MainActivity extends AppCompatActivity implements
     private FloatingActionButton mFabBar;
     private FloatingActionButton mFabHotel;
     private FloatingActionButton mFabBank;
+    private FloatingActionButton mFabIncrease;
+    private FloatingActionButton mFabDecrease;
     private ImageButton mSettingsButton;
 
     private boolean initialized;
@@ -239,6 +241,8 @@ public class MainActivity extends AppCompatActivity implements
         mFabFood = (FloatingActionButton) findViewById(R.id.fab_main_drinkfood);
         mFabTransport = (FloatingActionButton) findViewById(R.id.fab_main_transport);
         mFabStore = (FloatingActionButton) findViewById(R.id.fab_main_stores);
+        mFabDecrease = (FloatingActionButton) findViewById(R.id.fab_main_decrease_range);
+        mFabIncrease = (FloatingActionButton) findViewById(R.id.fab_main_increase_range);
         mSettingsButton = (ImageButton) findViewById(R.id.button_main_settings);
 
 
@@ -254,6 +258,8 @@ public class MainActivity extends AppCompatActivity implements
         mFabBar.setOnClickListener(this);
         mFabHotel.setOnClickListener(this);
         mFabEntertainment.setOnClickListener(this);
+        mFabDecrease.setOnClickListener(this);
+        mFabIncrease.setOnClickListener(this);
 
         Log.d(TAG, "YES YES YES");
 
@@ -436,15 +442,14 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
-            case R.id.request_location_updates_button:
-            {
+            case R.id.request_location_updates_button: {
                 Log.d(TAG, "Exploring button pressed");
                 boolean state = Utils.requestingLocationUpdates(this);
                 if (!checkPermissions()) {
                     requestPermissions();
                 } else {
-                    Log.d(TAG, "Location state:"+state);
-                    if(!state) {
+                    Log.d(TAG, "Location state:" + state);
+                    if (!state) {
                         Log.i(TAG, "Requesting Location Updates");
                         mService.requestLocationUpdates();
                     } else {
@@ -455,11 +460,10 @@ public class MainActivity extends AppCompatActivity implements
                 }
                 break;
             }
-            case R.id.fab_main_health:
-            {
+            case R.id.fab_main_health: {
                 boolean state = Utils.requestingHealthUpdates(this);
-                Log.d(TAG, "Health State:"+state);
-                if(!state) {
+                Log.d(TAG, "Health State:" + state);
+                if (!state) {
                     Log.i(TAG, "Requesting Health Updates");
                     Utils.setHealthUpdates(this, true);
 
@@ -469,11 +473,10 @@ public class MainActivity extends AppCompatActivity implements
                 }
                 break;
             }
-            case R.id.fab_main_transport:
-            {
+            case R.id.fab_main_transport: {
                 boolean state = Utils.requestingTransportUpdates(this);
-                Log.d(TAG, "Transport State:"+state);
-                if(!state) {
+                Log.d(TAG, "Transport State:" + state);
+                if (!state) {
                     Log.i(TAG, "Requesting Transport Updates");
                     Utils.setTransportUpdates(this, true);
                 } else {
@@ -482,11 +485,10 @@ public class MainActivity extends AppCompatActivity implements
                 }
                 break;
             }
-            case R.id.fab_main_stores:
-            {
+            case R.id.fab_main_stores: {
                 boolean state = Utils.requestingStoreUpdates(this);
-                Log.d(TAG, "Store State:"+state);
-                if(!state) {
+                Log.d(TAG, "Store State:" + state);
+                if (!state) {
                     Log.i(TAG, "Requesting Store Updates");
                     Utils.setStoreUpdates(this, true);
                 } else {
@@ -495,11 +497,10 @@ public class MainActivity extends AppCompatActivity implements
                 }
                 break;
             }
-            case R.id.fab_main_hotels:
-            {
+            case R.id.fab_main_hotels: {
                 boolean state = Utils.requestingHotelUpdates(this);
-                Log.d(TAG, "Hotel State:"+state);
-                if(!state) {
+                Log.d(TAG, "Hotel State:" + state);
+                if (!state) {
                     Log.i(TAG, "Requesting Hotel Updates");
                     Utils.setHotelUpdates(this, true);
                 } else {
@@ -508,11 +509,10 @@ public class MainActivity extends AppCompatActivity implements
                 }
                 break;
             }
-            case R.id.fab_main_entertainment:
-            {
+            case R.id.fab_main_entertainment: {
                 boolean state = Utils.requestingEntertainmentUpdates(this);
-                Log.d(TAG, "Entertainment State:"+state);
-                if(!state) {
+                Log.d(TAG, "Entertainment State:" + state);
+                if (!state) {
                     Log.i(TAG, "Requesting Entertainment Updates");
                     Utils.setEntertainmentUpdates(this, true);
                 } else {
@@ -521,11 +521,10 @@ public class MainActivity extends AppCompatActivity implements
                 }
                 break;
             }
-            case R.id.fab_main_drinkfood:
-            {
+            case R.id.fab_main_drinkfood: {
                 boolean state = Utils.requestingFoodUpdates(this);
-                Log.d(TAG, "Food State:"+state);
-                if(!state) {
+                Log.d(TAG, "Food State:" + state);
+                if (!state) {
                     Log.i(TAG, "Requesting Food Updates");
                     Utils.setFoodUpdates(this, true);
                 } else {
@@ -534,11 +533,10 @@ public class MainActivity extends AppCompatActivity implements
                 }
                 break;
             }
-            case R.id.fab_main_bars:
-            {
+            case R.id.fab_main_bars: {
                 boolean state = Utils.requestingBarUpdates(this);
-                Log.d(TAG, "Bar State:"+state);
-                if(!state) {
+                Log.d(TAG, "Bar State:" + state);
+                if (!state) {
                     Log.i(TAG, "Requesting Bar Updates");
                     Utils.setBarUpdates(this, true);
                 } else {
@@ -547,11 +545,10 @@ public class MainActivity extends AppCompatActivity implements
                 }
                 break;
             }
-            case R.id.fab_main_banks:
-            {
+            case R.id.fab_main_banks: {
                 boolean state = Utils.requestingBankUpdates(this);
-                Log.d(TAG, "Bank State:"+state);
-                if(!state) {
+                Log.d(TAG, "Bank State:" + state);
+                if (!state) {
                     Log.i(TAG, "Requesting Bank Updates");
                     Utils.setBankUpdates(this, true);
 
@@ -561,7 +558,27 @@ public class MainActivity extends AppCompatActivity implements
                 }
                 break;
             }
+            case R.id.fab_main_increase_range: {
+                Integer radius = Utils.getCurrentRadius(this);
+                if (radius<60) {
+                    Log.i(TAG, "Increasing Radius:"+radius + "," +(radius+5));
+                    Utils.updateRadius(this, (radius+5));
 
+                } else {
+                    Toast.makeText(this, "At maximum radius (60m)", Toast.LENGTH_SHORT).show();
+                }
+                break;
+            }
+            case R.id.fab_main_decrease_range: {
+                Integer radius = Utils.getCurrentRadius(this);
+                if (radius>20) {
+                    Log.i(TAG, "Decreasing Radius:" +radius + "," +(radius-5));
+                    Utils.updateRadius(this, (radius-5));
+                } else {
+                    Toast.makeText(this, "At minimum radius (20m)", Toast.LENGTH_SHORT).show();
+                }
+                break;
+            }
         }
 
     }

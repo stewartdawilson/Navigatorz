@@ -17,10 +17,12 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory app:title="Audio">
+
+    <PreferenceCategory
+        app:title="Audio">
 
         <ListPreference
-            android:defaultValue="1.0"
+            android:defaultValue="false"
             android:entries="@array/tts_speed_entries_array"
             android:entryValues="@array/tts_speed_values_array"
             android:key="list_preference_1"

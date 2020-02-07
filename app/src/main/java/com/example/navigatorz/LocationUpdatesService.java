@@ -413,11 +413,12 @@ public class LocationUpdatesService extends Service {
      * @param point the center point that the the tilequery will originate from.
      */
     private void makeTilequeryApiCall(@NonNull Point point) {
+        Integer radius = Utils.getCurrentRadius(this);
         MapboxTilequery tilequery = MapboxTilequery.builder()
                 .accessToken(getString(R.string.access_token))
                 .mapIds("mapbox.mapbox-streets-v8")
                 .query(point)
-                .radius(35)
+                .radius(radius)
                 .limit(3)
                 .geometry("point")
                 .dedupe(true)

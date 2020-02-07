@@ -17,6 +17,8 @@ class Utils {
     static final String KEY_REQUESTING_HOTEL_UPDATES = "requesting_hotel_updates";
     static final String KEY_REQUESTING_STORE_UPDATES = "requesting_store_updates";
     static final String KEY_REQUESTING_TRANSPORT_UPDATES = "requesting_transport_updates";
+    static final String KEY_RADIUS = "radius";
+
 
 
 
@@ -220,4 +222,19 @@ class Utils {
         return context.getString(R.string.walking,
                 DateFormat.getDateTimeInstance().format(new Date()));
     }
+
+    static Integer getCurrentRadius(Context context) {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getInt(KEY_RADIUS, 30);
+    }
+
+    static void updateRadius(Context context, int value) {
+        PreferenceManager.getDefaultSharedPreferences(context)
+                .edit()
+                .putInt(KEY_RADIUS, value)
+                .apply();
+    }
+
+
+
 }
