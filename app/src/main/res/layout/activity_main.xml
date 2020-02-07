@@ -8,6 +8,56 @@
     tools:context="MainActivity">
 
 
+    <TextView
+        android:id="@+id/txtTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="24dp"
+        android:fontFamily="sans-serif-smallcaps"
+        android:importantForAccessibility="no"
+        android:text="Navigatorz"
+        android:textColor="#4E4E4E"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_main_decrease_range"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="1dp"
+        android:padding="0dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_decrease_range"
+        app:backgroundTint="@android:color/background_dark"
+        app:borderWidth="0dp"
+        app:fabSize="mini"
+        app:layout_constraintBottom_toTopOf="@+id/txtRange"
+        app:layout_constraintEnd_toStartOf="@+id/fab_main_increase_range"
+        app:layout_constraintTop_toTopOf="parent"
+        app:maxImageSize="24dp"
+        app:rippleColor="#00EEEEEE"
+        app:useCompatPadding="true" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_main_increase_range"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="0dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_increase_range"
+        app:backgroundTint="@android:color/background_dark"
+        app:borderWidth="0dp"
+        app:fabSize="mini"
+        app:layout_constraintBottom_toTopOf="@+id/txtRange"
+        app:layout_constraintEnd_toStartOf="@+id/button_main_settings"
+        app:layout_constraintTop_toTopOf="parent"
+        app:maxImageSize="24dp"
+        app:rippleColor="#00EEEEEE"
+        app:useCompatPadding="true" />
+
     <ImageButton
         android:id="@+id/request_location_updates_button"
         style="@style/Widget.AppCompat.Button"
@@ -34,6 +84,7 @@
         android:textColor="@android:color/white"
         android:textSize="20sp"
         android:textStyle="bold"
+        android:importantForAccessibility="no"
         app:layout_constraintBottom_toBottomOf="@+id/request_location_updates_button"
         app:layout_constraintEnd_toEndOf="@+id/request_location_updates_button"
         app:layout_constraintHorizontal_bias="0.468"
@@ -42,17 +93,18 @@
         app:layout_constraintVertical_bias="0.944" />
 
     <TextView
-        android:id="@+id/textView2"
+        android:id="@+id/txtOutputTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="12dp"
         android:text="@string/output_locations"
         android:textColor="#444444"
         android:textSize="30sp"
         android:textStyle="bold"
+        android:importantForAccessibility="no"
         app:layout_constraintBottom_toTopOf="@+id/txt_main_annoucements"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.145"
+        app:layout_constraintHorizontal_bias="0.502"
         app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
@@ -64,6 +116,7 @@
         android:textColor="#000000"
         android:textSize="24sp"
         android:textStyle="normal"
+        android:importantForAccessibility="no"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.518"
@@ -94,28 +147,13 @@
         android:textColor="@android:color/white"
         android:textSize="20sp"
         android:textStyle="bold"
+        android:importantForAccessibility="no"
         app:layout_constraintBottom_toBottomOf="@+id/nav_map_button"
         app:layout_constraintEnd_toEndOf="@+id/nav_map_button"
         app:layout_constraintHorizontal_bias="0.486"
         app:layout_constraintStart_toStartOf="@+id/nav_map_button"
         app:layout_constraintTop_toTopOf="@+id/nav_map_button"
         app:layout_constraintVertical_bias="0.947" />
-
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:fontFamily="sans-serif-smallcaps"
-        android:text="Navigatorz"
-        android:textColor="#4E4E4E"
-        android:textSize="36sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/request_location_updates_button"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.045"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.197" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_main_health"
@@ -177,7 +215,7 @@
         app:borderWidth="0dp"
         app:fabSize="normal"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView3"
+        app:layout_constraintTop_toBottomOf="@+id/txtHealth"
         app:rippleColor="#00EEEEEE"
         app:useCompatPadding="true" />
 
@@ -209,7 +247,7 @@
         app:borderWidth="0dp"
         app:fabSize="normal"
         app:layout_constraintStart_toEndOf="@+id/fab_main_stores"
-        app:layout_constraintTop_toBottomOf="@+id/textView10"
+        app:layout_constraintTop_toBottomOf="@+id/txtFood"
         app:rippleColor="#00EEEEEE"
         app:useCompatPadding="true" />
 
@@ -225,7 +263,7 @@
         app:borderWidth="0dp"
         app:fabSize="normal"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView12"
+        app:layout_constraintTop_toBottomOf="@+id/txtEntertainment"
         app:rippleColor="#00EEEEEE"
         app:useCompatPadding="true" />
 
@@ -242,111 +280,132 @@
         app:layout_constraintEnd_toStartOf="@+id/fab_main_hotels"
         app:layout_constraintHorizontal_bias="0.592"
         app:layout_constraintStart_toEndOf="@+id/fab_main_bars"
-        app:layout_constraintTop_toBottomOf="@+id/textView11"
+        app:layout_constraintTop_toBottomOf="@+id/txtTransport"
         app:rippleColor="#00EEEEEE"
         app:useCompatPadding="true" />
 
     <TextView
-        android:id="@+id/textView3"
+        android:id="@+id/txtHealth"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/health"
         android:textColor="#444444"
         android:textSize="18sp"
+        android:importantForAccessibility="no"
         app:layout_constraintEnd_toEndOf="@+id/fab_main_health"
         app:layout_constraintStart_toStartOf="@+id/fab_main_health"
         app:layout_constraintTop_toBottomOf="@+id/fab_main_health" />
 
     <TextView
-        android:id="@+id/textView4"
+        android:id="@+id/txtStore"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
         android:text="@string/stores"
         android:textColor="#444444"
         android:textSize="18sp"
+        android:importantForAccessibility="no"
         app:layout_constraintEnd_toEndOf="@+id/fab_main_stores"
         app:layout_constraintStart_toStartOf="@+id/fab_main_stores"
         app:layout_constraintTop_toBottomOf="@+id/fab_main_stores" />
 
     <TextView
-        android:id="@+id/textView5"
+        android:id="@+id/txtBars"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/bars"
         android:textColor="#444444"
         android:textSize="18sp"
+        android:importantForAccessibility="no"
         app:layout_constraintEnd_toEndOf="@+id/fab_main_bars"
         app:layout_constraintStart_toStartOf="@+id/fab_main_bars"
         app:layout_constraintTop_toBottomOf="@+id/fab_main_bars" />
 
     <TextView
-        android:id="@+id/textView7"
+        android:id="@+id/txtBanks"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/banks"
         android:textColor="#444444"
         android:textSize="18sp"
+        android:importantForAccessibility="no"
         app:layout_constraintEnd_toEndOf="@+id/fab_main_banks"
         app:layout_constraintStart_toStartOf="@+id/fab_main_banks"
         app:layout_constraintTop_toBottomOf="@+id/fab_main_banks" />
 
     <TextView
-        android:id="@+id/textView9"
+        android:id="@+id/txtHotels"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/hotels"
         android:textColor="#444444"
         android:textSize="18sp"
+        android:importantForAccessibility="no"
         app:layout_constraintEnd_toEndOf="@+id/fab_main_hotels"
         app:layout_constraintStart_toStartOf="@+id/fab_main_hotels"
         app:layout_constraintTop_toBottomOf="@+id/fab_main_hotels" />
 
     <TextView
-        android:id="@+id/textView10"
+        android:id="@+id/txtFood"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/food"
         android:textColor="#444444"
         android:textSize="18sp"
+        android:importantForAccessibility="no"
         app:layout_constraintEnd_toEndOf="@+id/fab_main_drinkfood"
         app:layout_constraintStart_toStartOf="@+id/fab_main_drinkfood"
         app:layout_constraintTop_toBottomOf="@+id/fab_main_drinkfood" />
 
     <TextView
-        android:id="@+id/textView11"
+        android:id="@+id/txtTransport"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/transport"
         android:textColor="#444444"
         android:textSize="18sp"
+        android:importantForAccessibility="no"
         app:layout_constraintEnd_toEndOf="@+id/fab_main_transport"
         app:layout_constraintStart_toStartOf="@+id/fab_main_transport"
         app:layout_constraintTop_toBottomOf="@+id/fab_main_transport" />
 
     <TextView
-        android:id="@+id/textView12"
+        android:id="@+id/txtEntertainment"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/activities"
         android:textColor="#444444"
         android:textSize="18sp"
+        android:importantForAccessibility="no"
         app:layout_constraintEnd_toEndOf="@+id/fab_main_entertainment"
         app:layout_constraintStart_toStartOf="@+id/fab_main_entertainment"
         app:layout_constraintTop_toBottomOf="@+id/fab_main_entertainment" />
 
     <ImageButton
         android:id="@+id/button_main_settings"
-        android:layout_width="55dp"
-        android:layout_height="50dp"
-        android:layout_marginTop="16dp"
+        android:layout_width="59dp"
+        android:layout_height="55dp"
+        android:layout_marginTop="14dp"
         android:backgroundTint="@color/black_semi_transparent"
         android:scaleType="fitXY"
         android:src="@drawable/ic_gear"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toEndOf="@+id/textView"
+        app:layout_constraintStart_toEndOf="@+id/txtTitle"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/txtRange"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="40dp"
+        android:textColor="#444444"
+        android:text="@string/decrease_increase_range"
+        android:importantForAccessibility="no"
+        app:layout_constraintBottom_toTopOf="@+id/nav_map_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.87"
+        app:layout_constraintStart_toStartOf="parent" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

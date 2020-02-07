@@ -18,9 +18,9 @@
 
 
     <string-array name="announcement_format_values_array">
-        <item>Cardinal True</item>
+        <item>1</item>
 
-        <item>Relative True</item>
+        <item>2</item>
     </string-array>
 
     <string-array name="announcement_type_entries_array">
@@ -31,9 +31,9 @@
 
 
     <string-array name="announcement_type_values_array">
-        <item>Dist True</item>
+        <item>1</item>
 
-        <item>Time True</item>
+        <item>2</item>
     </string-array>
 
     <string-array name="tts_speed_entries_array">

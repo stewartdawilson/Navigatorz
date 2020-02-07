@@ -95,16 +95,14 @@ public class LocationUpdatesService extends Service {
     private final IBinder mBinder = new LocalBinder();
 
     /**
-     * The desired interval for location updates. Inexact. Updates may be more or less frequent.
+     * The desired interval for announcements when user is walking. Inexact. Updates may be more or less frequent.
      */
-    private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 10000;
+    private static final long WALKING_UPDATE_INTERVAL_IN_MILLISECONDS = 15000;
 
     /**
-     * The fastest rate for active location updates. Updates will never be more frequent
-     * than this value.
+     * The desired interval for announcements when user is still. Inexact. Updates may be more or less frequent.
      */
-    private static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS =
-            UPDATE_INTERVAL_IN_MILLISECONDS / 2;
+    private static final long STILL_UPDATE_INTERVAL_IN_MILLISECONDS = 30000;
 
     /**
      * The identifier for the notification displayed for the foreground service.
@@ -419,8 +417,8 @@ public class LocationUpdatesService extends Service {
                 .accessToken(getString(R.string.access_token))
                 .mapIds("mapbox.mapbox-streets-v8")
                 .query(point)
-                .radius(50)
-                .limit(4)
+                .radius(35)
+                .limit(3)
                 .geometry("point")
                 .dedupe(true)
                 .layers("poi_label,transit_stop_label")
@@ -589,19 +587,13 @@ public class LocationUpdatesService extends Service {
                 }
             }
         }
-        processLocations();
-
+        processPointsOfInterest();
     }
 
-    private void processLocations() {
-        Log.d("LOCATION", "" +mLocation.getBearing());
+    private void processPointsOfInterest() {
+        Log.d(TAG, "Location Bearing:" +mLocation.getBearing());
         Integer mybearing =  Math.round(mLocation.getBearing());
-        if(bearings_arr.size()<6) {
-            bearings_arr.add(mybearing);
-        } else {
-            bearings_arr.remove(0);
-            bearings_arr.add(mybearing);
-        }
+        updateBearings(mybearing);
 
         Log.d(TAG+":tilequerylocs", tilequerylocs.toString());
 
@@ -618,6 +610,15 @@ public class LocationUpdatesService extends Service {
         // Update notification content if running as a foreground service.
         if (serviceIsRunningInForeground(this)) {
             mNotificationManager.notify(NOTIFICATION_ID, getNotification());
+        }
+    }
+
+    private void updateBearings(Integer mybearing) {
+        if(bearings_arr.size()<5) {
+            bearings_arr.add(mybearing);
+        } else {
+            bearings_arr.remove(0);
+            bearings_arr.add(mybearing);
         }
     }
 
@@ -678,12 +679,9 @@ public class LocationUpdatesService extends Service {
                             Log.e(TAG, "No routes found");
                             return;
                         }
-
                         DirectionsRoute route = response.body().routes().get(0);
-
                         routes.add(route);
                     }
-
                     @Override
                     public void onFailure(Call<DirectionsResponse> call, Throwable throwable) {
                         Log.e(TAG, "Error: " + throwable.getMessage());
@@ -692,25 +690,21 @@ public class LocationUpdatesService extends Service {
     }
 
 
-
     /**
      * Sets the location request parameters.
-     * @param still
+     * @param still whether the user is still or not still (walking)
      */
     public void createLocationRequest(boolean still) {
         mLocationRequest = new LocationRequest();
         if(still) {
             Log.d(TAG, "User is still");
-            mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS*6);
-            mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS*12);
+            mLocationRequest.setInterval(STILL_UPDATE_INTERVAL_IN_MILLISECONDS);
+            mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         } else {
             Log.e(TAG, "User not still");
-
-            mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS*2);
-            mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS*2);
+            mLocationRequest.setInterval(WALKING_UPDATE_INTERVAL_IN_MILLISECONDS);
             mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         }
-
     }
 
     /**
