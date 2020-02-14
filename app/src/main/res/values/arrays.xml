@@ -31,9 +31,9 @@
 
 
     <string-array name="announcement_type_values_array">
-        <item>1</item>
+        <item>distance</item>
 
-        <item>2</item>
+        <item>time</item>
     </string-array>
 
     <string-array name="tts_speed_entries_array">
@@ -47,12 +47,12 @@
 
 
     <string-array name="tts_speed_values_array">
-        <item>0.25</item>
+        <item>0.2</item>
         <item>0.5</item>
         <item>1.0</item>
-        <item>1.25</item>
         <item>1.5</item>
         <item>2.0</item>
+        <item>3.0</item>
     </string-array>
 
 </resources>

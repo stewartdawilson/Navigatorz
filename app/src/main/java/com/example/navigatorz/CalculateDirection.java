@@ -1,6 +1,5 @@
 package com.example.navigatorz;
 
-import android.icu.text.LocaleDisplayNames;
 import android.location.Location;
 import android.util.Log;
 import java.util.ArrayList;

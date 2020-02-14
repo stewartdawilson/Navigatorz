@@ -22,26 +22,26 @@
         app:title="Audio">
 
         <ListPreference
-            android:defaultValue="false"
+            android:defaultValue="1.0"
             android:entries="@array/tts_speed_entries_array"
             android:entryValues="@array/tts_speed_values_array"
-            android:key="list_preference_1"
+            android:key="key_tts_speed"
             android:title="TTS Speed" />
     </PreferenceCategory>
 
     <PreferenceCategory app:title="Announcements">
 
         <ListPreference
-            android:defaultValue="false"
+            android:defaultValue="0"
             android:entries="@array/announcement_type_entries_array"
             android:entryValues="@array/announcement_type_values_array"
-            android:key="list_preference_2"
+            android:key="key_type_measurement"
             android:title="Type of measurement (Distance or time)" />
         <ListPreference
-            android:defaultValue="false"
+            android:defaultValue="0"
             android:entries="@array/announcement_format_entries_array"
             android:entryValues="@array/announcement_format_values_array"
-            android:key="list_preference_3"
+            android:key="key_announcements_format"
             android:title="Announcements format" />
 
     </PreferenceCategory>

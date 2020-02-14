@@ -137,9 +137,11 @@ public class MapsActivity extends AppCompatActivity implements
 
     BroadcastReceiver broadcastReceiver;
 
-    // variables for calculating and drawing a route
-    private DirectionsRoute currentRoute;
-    private NavigationMapRoute navigationMapRoute;
+
+    /**
+     * The current location.
+     */
+    private Location mLocation;
 
 
 
@@ -238,44 +240,6 @@ public class MapsActivity extends AppCompatActivity implements
 
     }
 
-    private void getRoute(Point origin, Point destination) {
-        NavigationRoute.builder(this)
-                .accessToken(Mapbox.getAccessToken())
-                .origin(origin)
-                .destination(destination)
-                .profile("walking")
-                .build()
-                .getRoute(new Callback<DirectionsResponse>() {
-                    @Override
-                    public void onResponse(Call<DirectionsResponse> call, Response<DirectionsResponse> response) {
-                        // You can get the generic HTTP info about the response
-                        Log.d(TAG, "Response code: " + response.code());
-                        if (response.body() == null) {
-                            Log.e(TAG, "No routes found, make sure you set the right user and access token.");
-                            return;
-                        } else if (response.body().routes().size() < 1) {
-                            Log.e(TAG, "No routes found");
-                            return;
-                        }
-
-                        currentRoute = response.body().routes().get(0);
-
-                        // Draw the route on the map
-                        if (navigationMapRoute != null) {
-                            navigationMapRoute.removeRoute();
-                        } else {
-                            navigationMapRoute = new NavigationMapRoute(null, mapView, mapboxMap, R.style.NavigationMapRoute);
-                        }
-                        navigationMapRoute.addRoute(currentRoute);
-                    }
-
-                    @Override
-                    public void onFailure(Call<DirectionsResponse> call, Throwable throwable) {
-                        Log.e(TAG, "Error: " + throwable.getMessage());
-                    }
-                });
-    }
-
 
 
 
@@ -331,7 +295,6 @@ public class MapsActivity extends AppCompatActivity implements
                 addResultLayer(style);
                 addClickLayer(style);
                 addSearchLayer(style);
-                initSearchFab(locationComponent.getLastKnownLocation());
                 Toast.makeText(MapsActivity.this, R.string.click_on_map_instruction, Toast.LENGTH_SHORT).show();
             }
         });
@@ -347,6 +310,7 @@ public class MapsActivity extends AppCompatActivity implements
                         .placeOptions(PlaceOptions.builder()
                                 .backgroundColor(Color.parseColor("#EEEEEE"))
                                 .limit(10)
+                                .proximity(Point.fromLngLat(point.getLongitude(),point.getLatitude()))
                                 .build(PlaceOptions.MODE_CARDS))
                         .build(MapsActivity.this);
                 startActivityForResult(intent, REQUEST_CODE_AUTOCOMPLETE);
@@ -691,8 +655,10 @@ public class MapsActivity extends AppCompatActivity implements
         public void onSuccess(LocationEngineResult result) {
             MapsActivity activity = activityWeakReference.get();
 
+
             if (activity != null) {
                 Location location = result.getLastLocation();
+                initSearchFab(location);
                 Log.d("LOCATION", "" +location);
 
                 if (location == null) {

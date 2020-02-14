@@ -10,6 +10,7 @@ import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.location.Location;
 import android.media.Ringtone;
@@ -25,6 +26,7 @@ import android.os.Looper;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.preference.PreferenceManager;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -147,7 +149,8 @@ public class LocationUpdatesService extends Service {
     private HashMap<String, ArrayList<String>> poi = new HashMap<>();
     private ArrayList<Integer> bearings_arr = new ArrayList<Integer>();
     private ArrayList<DirectionsRoute> routes = new ArrayList<>();
-    private Ringtone r;
+    private SharedPreferences mSharedPreferences;
+    private String measurement_type = "0";
 
 
 
@@ -182,8 +185,14 @@ public class LocationUpdatesService extends Service {
         mServiceHandler = new Handler(handlerThread.getLooper());
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
-        Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        r = RingtoneManager.getRingtone(getApplicationContext(), notification);
+        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+
+        measurement_type = mSharedPreferences.getString("key_type_measurement", "distance");
+        //int announcement_format = mSharedPreferences.getInt("key_announcements_format", 0);
+
+
+
 
 
         // Android O requires a Notification Channel.
@@ -378,15 +387,22 @@ public class LocationUpdatesService extends Service {
             Log.d("DIRECTIONSIZE", ""+directions.size());
             Log.d("DIRECTIONS", directions.get(count));
             if(!routes.isEmpty()) {
-                int distance  = (int) Math.round(routes.get(count).distance());
-                int time  = (int) Math.round(routes.get(count).duration());
-                String units = " seconds";
-                if (time>=60) {
-                    time = time/60;
-                    units = " minutes";
+                if(measurement_type.equals("time")) {
+                    int time = (int) Math.round(routes.get(count).duration());
+                    String units = " seconds";
+                    if (time>=60) {
+                        time = time/60;
+                        units = " minutes";
+                    }
+                    poi_text.add(pair.getKey() + " is " + time + units + " on your " + directions.get(count)+"\n");
+                    count++;
+                } else {
+                    int distance  = (int) Math.round(routes.get(count).distance());
+
+                    poi_text.add(pair.getKey() + " is " + distance + "m on your " + directions.get(count)+"\n");
+                    count++;
                 }
-                poi_text.add(pair.getKey() + " is " + distance + "m " + "or " + time + units + " on your " + directions.get(count)+"\n");
-                count++;
+
             }
 
         }
@@ -396,14 +412,7 @@ public class LocationUpdatesService extends Service {
     private LatLng truncateLatLng(Location location, double trunc) {
         double lat = (Math.floor(location.getLatitude()*trunc))/trunc;
         double lng = (Math.floor(location.getLongitude()*trunc))/trunc;
-        Log.d("LATLNG", "" +location.getLatitude() + " " + location.getLongitude());
-        Log.d("LATLNG", "" +location.getLatitude()*trunc + " " + (location.getLongitude())*trunc);
-        Log.d("LATLNG", "" +Math.floor(location.getLongitude()*trunc) + " " + Math.floor(location.getLatitude()*trunc));
-
-        Log.d("LATLNG", "" +lat + " " + lng);
-
         return new LatLng(lat, lng);
-
     }
 
 
@@ -662,6 +671,8 @@ public class LocationUpdatesService extends Service {
     }
 
     private void getRoute(Point origin, Point destination) {
+        Log.d(TAG, "getRoute:destination:"+destination.coordinates().toString());
+        Log.d(TAG, "getRoute:origin:"+origin.coordinates().toString());
         NavigationRoute.builder(this)
                 .accessToken(getString(R.string.access_token))
                 .origin(origin)

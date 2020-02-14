@@ -121,6 +121,8 @@ public class MainActivity extends AppCompatActivity implements
     private String msg;
     String mostRecentUtteranceID;
     private HashMap<String, String> points = new HashMap<>();
+    private SharedPreferences mSharedPreferences;
+
 
 
 
@@ -161,6 +163,11 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         myReceiver = new MyReceiver();
         setContentView(R.layout.activity_main);
+        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+
+        String speed = mSharedPreferences.getString("key_tts_speed", "1.0");
+
 
         tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
             @Override
@@ -170,6 +177,7 @@ public class MainActivity extends AppCompatActivity implements
                 }else{
                     if (status == TextToSpeech.SUCCESS){
                         tts.setLanguage(Locale.UK);
+                        tts.setSpeechRate(Float.valueOf(speed));
                         ttsInitialized();
                     }
                 }
@@ -597,6 +605,7 @@ public class MainActivity extends AppCompatActivity implements
                 handleUserActivity(type, confidence);
             }
             ArrayList<String> messages = intent.getStringArrayListExtra(LocationUpdatesService.EXTRA_LOCATION);
+            Log.d(TAG, messages.toString());
             points = new HashMap<>();
             for (String m : messages) {
                 speak(m);
@@ -631,6 +640,7 @@ public class MainActivity extends AppCompatActivity implements
             case Utils.KEY_REQUESTING_HOTEL_UPDATES: setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_HOTEL_UPDATES, false), Utils.KEY_REQUESTING_HOTEL_UPDATES);break;
             case Utils.KEY_REQUESTING_STORE_UPDATES: setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_STORE_UPDATES, false), Utils.KEY_REQUESTING_STORE_UPDATES);break;
             case Utils.KEY_REQUESTING_BAR_UPDATES: setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_BAR_UPDATES, false), Utils.KEY_REQUESTING_BAR_UPDATES);break;
+            case "key_tts_speed": String speed = sharedPreferences.getString(s,"1.0"); tts.setSpeechRate(Float.valueOf(speed));break;
         }
 
     }
