@@ -32,7 +32,10 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.location.DetectedActivity;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -61,6 +64,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Random;
 
 /**
  * A bound and started service that is promoted to a foreground service when location updates have
@@ -76,7 +80,7 @@ import java.util.Queue;
  * continue. When the activity comes back to the foreground, the foreground service stops, and the
  * notification assocaited with that service is removed.
  */
-public class LocationUpdatesService extends Service {
+public class LocationUpdatesService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     private static final String PACKAGE_NAME =
             "com.google.android.gms.location.sample.locationupdatesforegroundservice";
@@ -99,7 +103,7 @@ public class LocationUpdatesService extends Service {
     /**
      * The desired interval for announcements when user is walking. Inexact. Updates may be more or less frequent.
      */
-    private static final long WALKING_UPDATE_INTERVAL_IN_MILLISECONDS = 15000;
+    private static final long WALKING_UPDATE_INTERVAL_IN_MILLISECONDS = 30000;
 
     /**
      * The desired interval for announcements when user is still. Inexact. Updates may be more or less frequent.
@@ -142,15 +146,16 @@ public class LocationUpdatesService extends Service {
      */
     private Location mLocation;
 
-    private TextToSpeech announcer;
+    private TextToSpeech tts;
     private boolean still = false;
-    private String roadName = "";
     private ArrayList<Location> tilequerylocs = new ArrayList<>();
     private HashMap<String, ArrayList<String>> poi = new HashMap<>();
     private ArrayList<Integer> bearings_arr = new ArrayList<Integer>();
     private ArrayList<DirectionsRoute> routes = new ArrayList<>();
     private SharedPreferences mSharedPreferences;
     private String measurement_type = "0";
+    String mostRecentUtteranceID;
+    private HashMap<String, String> points = new HashMap<>();
 
 
 
@@ -167,9 +172,15 @@ public class LocationUpdatesService extends Service {
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 super.onLocationResult(locationResult);
-                if (locationResult.getLastLocation() == mLocation) {
+                float distanceInMetersOne = locationResult.getLastLocation().distanceTo(mLocation);
+                if (distanceInMetersOne==0) {
+                    Log.d(TAG, "Location not new: "+locationResult.getLastLocation().toString()+" "+mLocation.toString());
+
                     return;
                 }
+
+                Log.d(TAG, "Location new: "+locationResult.getLastLocation().toString()+" "+mLocation.toString());
+
                 onNewLocation(locationResult.getLastLocation());
             }
         };
@@ -188,12 +199,9 @@ public class LocationUpdatesService extends Service {
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
 
+
         measurement_type = mSharedPreferences.getString("key_type_measurement", "distance");
         //int announcement_format = mSharedPreferences.getInt("key_announcements_format", 0);
-
-
-
-
 
         // Android O requires a Notification Channel.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -215,6 +223,29 @@ public class LocationUpdatesService extends Service {
         boolean startedFromNotification = intent.getBooleanExtra(EXTRA_STARTED_FROM_NOTIFICATION,
                 false);
 
+        String speed = mSharedPreferences.getString("key_tts_speed", "1.0");
+
+
+        tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(tts.getEngines().size() == 0){
+                    mServiceHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(LocationUpdatesService.this.getApplicationContext(),"My Awesome service toast...",Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }else{
+                    if (status == TextToSpeech.SUCCESS){
+                        tts.setLanguage(Locale.UK);
+                        tts.setSpeechRate(Float.valueOf(speed));
+                        ttsInitialized();
+                    }
+                }
+            }
+        });
+
         // We got here because the user decided to remove location updates from the notification.
         if (startedFromNotification) {
             removeLocationUpdates();
@@ -228,6 +259,47 @@ public class LocationUpdatesService extends Service {
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         mChangingConfiguration = true;
+    }
+
+    private void ttsInitialized() {
+        tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+            @Override
+            public void onStart(String utteranceId) {
+
+                if(!points.isEmpty()) {
+                    Intent intent = new Intent(ACTION_BROADCAST);
+                    Log.d(TAG, "Sending point: " +points.toString());
+
+                    Log.d(TAG, "Sending point: " +points.get(utteranceId));
+                    intent.putExtra(EXTRA_LOCATION, points.get(utteranceId));
+                    LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+                }
+            }
+
+            @Override
+            // this method will always called from a background thread.
+            public void onDone(String utteranceId) {
+            }
+
+            @Override
+            public void onError(String utteranceId) {
+
+            }
+        });
+    }
+
+    private void speak(String m) {
+        // set unique utterance ID for each utterance
+        mostRecentUtteranceID = (new Random().nextInt() % 9999999) + ""; // "" is String force
+
+        // set params
+        // *** this method will work for more devices: API 19+ ***
+        HashMap<String, String> params = new HashMap<>();
+        points.put(mostRecentUtteranceID, m);
+        Log.d(TAG, m);
+        params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, mostRecentUtteranceID);
+        tts.speak(m,TextToSpeech.QUEUE_ADD,params);
+
     }
 
     @Override
@@ -375,17 +447,23 @@ public class LocationUpdatesService extends Service {
         Point point = Point.fromLngLat(truncLatLng.getLongitude(), truncLatLng.getLatitude());
 
         makeTilequeryApiCall(point);
-        makeTilequeryApiRoadCall(point);
     }
 
     public ArrayList<String> buildOutput(ArrayList<String> directions) {
         ArrayList<String> poi_text = new ArrayList<>();
         int count = 0;
+        points = new HashMap<>();
+        Log.d(TAG, "POI size: "+poi.size());
+        Log.d(TAG, "POI : "+poi.toString());
+
+
         for (Map.Entry<String, ArrayList<String>> pair : poi.entrySet()) {
-            Log.d("COUNT", ""+count);
-            Log.d("PAIR", pair.getKey());
-            Log.d("DIRECTIONSIZE", ""+directions.size());
-            Log.d("DIRECTIONS", directions.get(count));
+            Log.d(TAG, "POI size: "+poi.size());
+
+            Log.d(TAG,"COUNT"+count);
+            Log.d(TAG,"PAIR"+ pair.getKey());
+            Log.d(TAG,"DIRECTIONSIZE"+directions.size());
+            Log.d(TAG,"DIRECTIONS"+directions.get(count));
             if(!routes.isEmpty()) {
                 if(measurement_type.equals("time")) {
                     int time = (int) Math.round(routes.get(count).duration());
@@ -395,17 +473,25 @@ public class LocationUpdatesService extends Service {
                         units = " minutes";
                     }
                     poi_text.add(pair.getKey() + " is " + time + units + " on your " + directions.get(count)+"\n");
+                    String msg = pair.getKey() + " is " + time + units + " on your " + directions.get(count)+"\n";
                     count++;
+                    Log.d(TAG,"Speaking");
+                    speak(msg);
                 } else {
                     int distance  = (int) Math.round(routes.get(count).distance());
 
                     poi_text.add(pair.getKey() + " is " + distance + "m on your " + directions.get(count)+"\n");
+                    String msg = pair.getKey() + " is " + distance + "m on your " + directions.get(count)+"\n";
                     count++;
+                    Log.d(TAG,"Speaking");
+
+                    speak(msg);
                 }
 
             }
 
         }
+        routes = new ArrayList<>();
         return poi_text;
     }
 
@@ -460,60 +546,15 @@ public class LocationUpdatesService extends Service {
         });
     }
 
-    /**
-     * Use the Java SDK's MapboxTilequery class to build a API request and use the API response
-     *
-     * @param point the center point that the the tilequery will originate from.
-     */
-    private void makeTilequeryApiRoadCall(@NonNull Point point) {
-        MapboxTilequery tilequery = MapboxTilequery.builder()
-                .accessToken(getString(R.string.access_token))
-                .mapIds("mapbox.mapbox-streets-v8")
-                .query(point)
-                .radius(60)
-                .limit(1)
-                .geometry("linestring")
-                .dedupe(true)
-                .layers("road")
-                .build();
-
-        tilequery.enqueueCall(new Callback<FeatureCollection>() {
-            @Override
-            public void onResponse(Call<FeatureCollection> call, Response<FeatureCollection> response) {
-                if (response.body() != null) {
-                    FeatureCollection responseFeatureCollection = response.body();
-                    if (responseFeatureCollection.features() != null) {
-                        List<Feature> featureList = responseFeatureCollection.features();
-                        if (featureList.isEmpty()) {
-                            Log.d(TAG, "No roads");
-                        } else {
-                            roadName = "";
-                            Log.d("FEATURELIST-ROAD", featureList.toString());
-                            extractDataRoad(featureList);
-
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(Call<FeatureCollection> call, Throwable throwable) {
-                Log.d("Request failed: %s", throwable.getMessage());
-            }
-        });
-    }
-
-    public void extractDataRoad(List<Feature> featureList) {
-        for (int i =0; i<featureList.size(); i++) {
-            Feature feature = featureList.get(i);
-
-            JsonObject tile = feature.getProperty("tilequery").getAsJsonObject();
-
-            JsonObject props = feature.properties();
-            if (tile.get("layer").getAsString().equals("road") && tile.get("geometry").getAsString().equals("linestring") && props.get("name")!=null) {
-                roadName = props.get("name").getAsString();
-                break;
-            }
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+        // Update the buttons state depending on whether location updates are being requested.
+        Log.d(TAG+"onSharedPreferenceChanged:", s);
+        if(s.equals("key_tts_speed")) {
+            String speed = sharedPreferences.getString(s,"1.0");
+            tts.setSpeechRate(Float.valueOf(speed));
+        } else {
+            measurement_type = sharedPreferences.getString(s,"distance");
         }
     }
 
@@ -597,7 +638,6 @@ public class LocationUpdatesService extends Service {
                 }
             }
         }
-        processPointsOfInterest();
     }
 
     private void processPointsOfInterest() {
@@ -609,13 +649,7 @@ public class LocationUpdatesService extends Service {
 
         CalculateDirection cd = new CalculateDirection(mLocation, bearings_arr, tilequerylocs);
         ArrayList<String> directions = cd.bearingsToDirection();
-        ArrayList<String> messages = buildOutput(directions);
-        Log.d("ROAD", "" +roadName);
-
-        // Notify anyone listening for broadcasts about the new location.
-        Intent intent = new Intent(ACTION_BROADCAST);
-        intent.putExtra(EXTRA_LOCATION, messages);
-        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+        buildOutput(directions);
 
         // Update notification content if running as a foreground service.
         if (serviceIsRunningInForeground(this)) {
@@ -693,6 +727,9 @@ public class LocationUpdatesService extends Service {
                         }
                         DirectionsRoute route = response.body().routes().get(0);
                         routes.add(route);
+                        if(routes.size()==poi.size()) {
+                            processPointsOfInterest();
+                        }
                     }
                     @Override
                     public void onFailure(Call<DirectionsResponse> call, Throwable throwable) {
@@ -711,12 +748,21 @@ public class LocationUpdatesService extends Service {
         if(still) {
             Log.d(TAG, "User is still");
             mLocationRequest.setInterval(STILL_UPDATE_INTERVAL_IN_MILLISECONDS);
+            mLocationRequest.setFastestInterval(15000);
+
             mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
         } else {
             Log.e(TAG, "User not still");
             mLocationRequest.setInterval(WALKING_UPDATE_INTERVAL_IN_MILLISECONDS);
+            mLocationRequest.setFastestInterval(20000);
             mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         }
+    }
+
+    public void stopTTS() {
+        tts.stop();
+        tts.shutdown();
     }
 
     /**

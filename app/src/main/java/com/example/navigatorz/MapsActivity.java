@@ -4,22 +4,23 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
-import android.os.Build;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 
 import android.os.Environment;
-import android.speech.tts.TextToSpeech;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -53,13 +54,10 @@ import com.mapbox.mapboxsdk.plugins.places.autocomplete.PlaceAutocomplete;
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.model.PlaceOptions;
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
-import com.mapbox.services.android.navigation.ui.v5.route.NavigationMapRoute;
 import com.mapbox.services.android.navigation.v5.navigation.NavigationRoute;
 import com.mapbox.api.directions.v5.models.DirectionsResponse;
 import com.mapbox.api.directions.v5.models.DirectionsRoute;
 
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -81,13 +79,16 @@ import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import pub.devrel.easypermissions.EasyPermissions;
 
-import java.util.Locale;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconAllowOverlap;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconIgnorePlacement;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconImage;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconOffset;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.symbolAvoidEdges;
+
+
 
 /**
  * Use the Mapbox Tilequery API to retrieve information about Features on a Vector Tileset. More info about
@@ -107,19 +108,9 @@ public class MapsActivity extends AppCompatActivity implements
     private static final String SEARCH_LAYER_ID = "SEARCH_LAYER_ID";
     protected static final String TAG = MapsActivity.class.getSimpleName();
 
-    private FragmentTransaction fragmentTransaction;
-    private FragmentManager fragmentManager;
+
 
     private LocationComponent locationComponent;
-
-    private TextToSpeech announcer;
-
-
-
-
-
-
-
 
 
     private PermissionsManager permissionsManager;
@@ -127,21 +118,46 @@ public class MapsActivity extends AppCompatActivity implements
     private MapView mapView;
     private TextView tilequeryResponseTextView;
     private TextView bearingTextView;
-    private String roadName = "";
     private Button startBtn;
     private boolean bearingSwitch = false;
     private List<String[]> data = new ArrayList<String[]>();
 
-    private TextView txtActivity, txtConfidence;
     private Button btnStartTracking, btnStopTracking, navButton;
 
     BroadcastReceiver broadcastReceiver;
+    private ArrayList<DirectionsRoute> routes = new ArrayList<>();
+    private ArrayList<String> messages = new ArrayList<>();
 
 
-    /**
-     * The current location.
-     */
-    private Location mLocation;
+
+    // A reference to the service used to get location updates.
+    private LocationUpdatesService mService = null;
+
+    // Tracks the bound state of the service.
+    private boolean mBound = false;
+
+
+    private int prev_type = -1;
+
+
+
+
+    // Monitors the state of the connection to the service.
+    private final ServiceConnection mServiceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            LocationUpdatesService.LocalBinder binder = (LocationUpdatesService.LocalBinder) service;
+            mService = binder.getService();
+            mBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mService = null;
+            mBound = false;
+        }
+    };
 
 
 
@@ -151,8 +167,8 @@ public class MapsActivity extends AppCompatActivity implements
     private ArrayList<Location> tilequerylocs = new ArrayList<>();
     private HashMap<String, ArrayList<String>> poi = new HashMap<>();
     private ArrayList<Integer> bearings_arr = new ArrayList<Integer>();
-    private long DEFAULT_INTERVAL_IN_MILLISECONDS = 1000L;
-    private long DEFAULT_MAX_WAIT_TIME = DEFAULT_INTERVAL_IN_MILLISECONDS * 5;
+    private long DEFAULT_INTERVAL_IN_MILLISECONDS = 10000;
+    private long DEFAULT_MAX_WAIT_TIME = 20000;
 
     // Variables needed to listen to location updates
     private MapsActivityLocationCallback callback = new MapsActivityLocationCallback(this);
@@ -173,22 +189,12 @@ public class MapsActivity extends AppCompatActivity implements
         tilequeryResponseTextView = findViewById(R.id.txt_main_annoucements);
         bearingTextView = findViewById(R.id.bearing_info_textview);
 
-        txtActivity = findViewById(R.id.txtActivity);
-        txtConfidence = findViewById(R.id.txtConfidence);
 
 
 
         btnStartTracking = findViewById(R.id.btnStartTracking);
-        btnStopTracking = findViewById(R.id.btnStopTracking);
 
-        announcer = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
-            @Override
-            public void onInit(int status) {
-                if(status != TextToSpeech.ERROR) {
-                    announcer.setLanguage(Locale.UK);
-                }
-            }
-        });
+        btnStopTracking = findViewById(R.id.btnStopTracking);
 
 
 
@@ -216,18 +222,22 @@ public class MapsActivity extends AppCompatActivity implements
                 }
             }
         };
-        startTracking();
+        //startTracking();
 
         startBtn = findViewById(R.id.startBtn);
         getPermissionWriteFile();
+        startBtn.setBackgroundColor(Color.RED);
+
 
         startBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 bearingSwitch = !bearingSwitch;
                 if(bearingSwitch) {
+                    Toast.makeText(getApplicationContext(), "Collecting data!",Toast.LENGTH_LONG).show();
                     startBtn.setBackgroundColor(Color.GREEN);
                 } else {
+                    Toast.makeText(getApplicationContext(), "Finished collecting data!",Toast.LENGTH_LONG).show();
                     startBtn.setBackgroundColor(Color.RED);
 
                 }
@@ -237,38 +247,44 @@ public class MapsActivity extends AppCompatActivity implements
         mapView.onCreate(savedInstanceState);
         mapView.getMapAsync(this);
 
+        // Bind to the service. If the service is in foreground mode, this signals to the service
+        // that since this activity is in the foreground, the service can exit foreground mode.
+        bindService(new Intent(this, LocationUpdatesService.class), mServiceConnection,
+                Context.BIND_AUTO_CREATE);
+
 
     }
-
-
-
-
 
     private void handleUserActivity(int type, int confidence) {
         String label = getString(R.string.unknown_activity);
+        Log.e(TAG, "User activity: " + label + ", Confidence: " + confidence);
 
-        switch (type) {
-            case DetectedActivity.STILL: {
-                label = getString(R.string.still);
-                break;
-            }
-            case DetectedActivity.WALKING: {
-                label = getString(R.string.walking);
-                break;
-            }
-            case DetectedActivity.UNKNOWN: {
-                label = getString(R.string.unknown_activity);
-                break;
-            }
-        }
 
-        Log.e("DETECTEDACTIVITY", "User activity: " + label + ", Confidence: " + confidence);
-
-        if (confidence > Constants.CONFIDENCE) {
-            txtActivity.setText(label);
-            txtConfidence.setText("Confidence: " + confidence);
+        if (confidence > Constants.CONFIDENCE && type != prev_type && Utils.requestingLocationUpdates(this)) {
+            switch (type) {
+                case DetectedActivity.STILL: {
+                    prev_type = DetectedActivity.STILL;
+                    Log.e(TAG, "User is still");
+                    mService.removeLocationUpdates();
+                    mService.createLocationRequest(true);
+                    mService.requestLocationUpdates();
+                    break;
+                }
+                case DetectedActivity.WALKING | DetectedActivity.UNKNOWN: {
+                    prev_type = DetectedActivity.UNKNOWN;
+                    mService.removeLocationUpdates();
+                    mService.createLocationRequest(false);
+                    mService.requestLocationUpdates();
+                    break;
+                }
+            }
         }
     }
+
+
+
+
+
 
     private void getPermissionWriteFile() {
         String perms = Manifest.permission.WRITE_EXTERNAL_STORAGE;
@@ -295,7 +311,6 @@ public class MapsActivity extends AppCompatActivity implements
                 addResultLayer(style);
                 addClickLayer(style);
                 addSearchLayer(style);
-                Toast.makeText(MapsActivity.this, R.string.click_on_map_instruction, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -424,7 +439,7 @@ public class MapsActivity extends AppCompatActivity implements
                         } else {
                             tilequerylocs = new ArrayList<>();
                             poi = new HashMap<>();
-                            Log.d("FEATURELIST-POI", featureList.toString());
+                                Log.d(TAG, featureList.toString());
 
                             extractDataPOI(featureList, point);
 
@@ -454,69 +469,10 @@ public class MapsActivity extends AppCompatActivity implements
 
             @Override
             public void onFailure(Call<FeatureCollection> call, Throwable throwable) {
-                Log.d("Request failed: %s", throwable.getMessage());
+                Log.d(TAG, "Request failed: "+ throwable.getMessage());
                 Toast.makeText(MapsActivity.this, R.string.api_error, Toast.LENGTH_SHORT).show();
             }
         });
-    }
-
-    /**
-     * Use the Java SDK's MapboxTilequery class to build a API request and use the API response
-     *
-     * @param point the center point that the the tilequery will originate from.
-     */
-    private void makeTilequeryApiRoadCall(@NonNull LatLng point) {
-        MapboxTilequery tilequery = MapboxTilequery.builder()
-                .accessToken(getString(R.string.access_token))
-                .mapIds("mapbox.mapbox-streets-v8")
-                .query(Point.fromLngLat(point.getLongitude(), point.getLatitude()))
-                .radius(60)
-                .limit(1)
-                .geometry("linestring")
-                .dedupe(true)
-                .layers("road")
-                .build();
-
-        tilequery.enqueueCall(new Callback<FeatureCollection>() {
-            @Override
-            public void onResponse(Call<FeatureCollection> call, Response<FeatureCollection> response) {
-                if (response.body() != null) {
-                    FeatureCollection responseFeatureCollection = response.body();
-                    if (responseFeatureCollection.features() != null) {
-                        List<Feature> featureList = responseFeatureCollection.features();
-                        if (featureList.isEmpty()) {
-                            Toast.makeText(MapsActivity.this,
-                                    getString(R.string.no_tilequery_response_features_toast), Toast.LENGTH_SHORT).show();
-                        } else {
-                            roadName = "";
-                            Log.d("FEATURELIST-ROAD", featureList.toString());
-                            extractDataRoad(featureList);
-
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(Call<FeatureCollection> call, Throwable throwable) {
-                Log.d("Request failed: %s", throwable.getMessage());
-                Toast.makeText(MapsActivity.this, R.string.api_error, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    public void extractDataRoad(List<Feature> featureList) {
-        for (int i =0; i<featureList.size(); i++) {
-            Feature feature = featureList.get(i);
-
-            JsonObject tile = feature.getProperty("tilequery").getAsJsonObject();
-
-            JsonObject props = feature.properties();
-            if (tile.get("layer").getAsString().equals("road") && tile.get("geometry").getAsString().equals("linestring") && props.get("name")!=null) {
-                roadName = props.get("name").getAsString();
-                break;
-            }
-        }
     }
 
     public void extractDataPOI(List<Feature> featureList, LatLng point) {
@@ -556,7 +512,9 @@ public class MapsActivity extends AppCompatActivity implements
                 ArrayList<String> details = new ArrayList<>();
                 details.add(location_type);
                 details.add(Double.toString(distance));
+                details.add(p.toJson());
                 poi.put(location_name, details);
+                getRoute(Point.fromLngLat(point.getLongitude(),point.getLatitude()),p);
             }
         }
 
@@ -659,23 +617,20 @@ public class MapsActivity extends AppCompatActivity implements
             if (activity != null) {
                 Location location = result.getLastLocation();
                 initSearchFab(location);
-                Log.d("LOCATION", "" +location);
+                Log.d(TAG, "Location" +location);
 
                 if (location == null) {
                     return;
                 }
                 // Pass the new location to the Maps SDK's LocationComponent
                 if (activity.mapboxMap != null && result.getLastLocation() != null) {
-                    addTruncatedPoints(location);
-                    LatLng point = new LatLng(location.getLatitude(), location.getLongitude());
 
-                    point = truncateLatLng(location, 1e4);
+                    LatLng point = truncateLatLng(location, 1e4);
 
 
                     makeTilequeryApiCall(point);
-                    makeTilequeryApiRoadCall(point);
 
-                    Log.d("LOCATION", "" +location.getBearing());
+                    Log.d(TAG, "Bearing" +location.getBearing());
                     Integer mybearing =  Math.round(location.getBearing());
                     if(bearings_arr.size()<6) {
                         bearings_arr.add(mybearing);
@@ -687,28 +642,12 @@ public class MapsActivity extends AppCompatActivity implements
 
                     CalculateDirection cd = new CalculateDirection(location, bearings_arr, tilequerylocs);
                     ArrayList<String> directions = cd.bearingsToDirection();
-                    StringBuilder output = buildOutput(directions);
-                    Log.d("ROAD", "" +roadName);
-
-                    if (bearingSwitch) {
-                        data.add(new String[] {location.getBearing()+"",calculateAverage(bearings_arr)+"",point.getLatitude()+"",point.getLongitude()+"" });
-                    } else {
-                        if(!data.isEmpty()) {
-                            csvWriter(data);
-                            data = new ArrayList<String[]>();
-                        }
-                    }
-
-                    tilequeryResponseTextView.setText("You are on " + roadName + " here are the Points of Interest:\n" + output);
+                    StringBuilder output = buildOutput(directions, location, Point.fromLngLat(point.getLatitude(), point.getLongitude()));
+                    Log.d(TAG, output.toString());
 
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        announcer.speak(output,TextToSpeech.QUEUE_FLUSH,null,null);
-                    } else {
-                        announcer.speak(String.valueOf(output), TextToSpeech.QUEUE_FLUSH, null);
-                    }
 
-
+                    tilequeryResponseTextView.setText("Here are the Points of Interest:\n" + output);
                     activity.mapboxMap.getLocationComponent().forceLocationUpdate(result.getLastLocation());
                 }
             }
@@ -721,7 +660,7 @@ public class MapsActivity extends AppCompatActivity implements
          */
         @Override
         public void onFailure(@NonNull Exception exception) {
-            Log.d("LocationChangeActivity", exception.getLocalizedMessage());
+            Log.d(TAG, "LocationChangeActivity"+exception.getLocalizedMessage());
             MapsActivity activity = activityWeakReference.get();
             if (activity != null) {
                 Toast.makeText(activity, exception.getLocalizedMessage(),
@@ -741,84 +680,101 @@ public class MapsActivity extends AppCompatActivity implements
         return Math.round(sum);
     }
 
-    private void addTruncatedPoints(Location location) {
-        LatLng point_e3 = truncateLatLng(location, 1e3);
-        LatLng point_e4 = truncateLatLng(location, 1e4);
-        LatLng point_e5 = truncateLatLng(location, 1e5);
-        LatLng point_e6 = truncateLatLng(location, 1e6);
-
-
-        List<Feature> pointList = new ArrayList<>();
-        pointList.add(Feature.fromGeometry(
-                Point.fromLngLat(point_e3.getLongitude(), point_e3.getLatitude())));
-        pointList.add(Feature.fromGeometry(
-                Point.fromLngLat(point_e4.getLongitude(), point_e4.getLatitude())));
-        pointList.add(Feature.fromGeometry(
-                Point.fromLngLat(point_e5.getLongitude(), point_e5.getLatitude())));
-        pointList.add(Feature.fromGeometry(
-                Point.fromLngLat(point_e6.getLongitude(), point_e6.getLatitude())));
-
-        mapboxMap.getStyle(new Style.OnStyleLoaded() {
-            @Override
-            public void onStyleLoaded(@NonNull Style style) {
-                GeoJsonSource locationSource = style.getSourceAs(LOCATION_CENTER_GEOJSON_SOURCE_ID);
-                if (locationSource != null) {
-                    locationSource.setGeoJson(FeatureCollection.fromFeatures(pointList));
-                }
-            }
-        });
-    }
-
     private LatLng truncateLatLng(Location location, double trunc) {
         double lat = (Math.floor(location.getLatitude()*trunc))/trunc;
         double lng = (Math.floor(location.getLongitude()*trunc))/trunc;
-        Log.d("LATLNG", "" +location.getLatitude() + " " + location.getLongitude());
-        Log.d("LATLNG", "" +location.getLatitude()*trunc + " " + (location.getLongitude())*trunc);
-        Log.d("LATLNG", "" +Math.floor(location.getLongitude()*trunc) + " " + Math.floor(location.getLatitude()*trunc));
+        Log.d(TAG, "" +location.getLatitude() + " " + location.getLongitude());
+        Log.d(TAG, "" +location.getLatitude()*trunc + " " + (location.getLongitude())*trunc);
+        Log.d(TAG, "" +Math.floor(location.getLongitude()*trunc) + " " + Math.floor(location.getLatitude()*trunc));
 
-        Log.d("LATLNG", "" +lat + " " + lng);
+        Log.d(TAG, "" +lat + " " + lng);
 
         return new LatLng(lat, lng);
 
     }
 
 
-    public StringBuilder buildOutput(ArrayList<String> directions) {
+    public StringBuilder buildOutput(ArrayList<String> directions, Location location, Point point) {
         StringBuilder poi_text = new StringBuilder();
-        int count = 0;
-        for (Entry<String, ArrayList<String>> pair : poi.entrySet()) {
-            Log.d("COUNT", ""+count);
-            Log.d("PAIR", pair.getKey());
-            Log.d("DIRECTIONSIZE", ""+directions.size());
-            Log.d("DIRECTIONS", directions.get(count));
 
-            poi_text.append(pair.getKey()).append(" is ").append(pair.getValue().get(1)).append("m ").append(" on your ").append(directions.get(count)).append("\n");
-            count++;
+        AtomicInteger count = new AtomicInteger();
+        for (Entry<String, ArrayList<String>> pair : poi.entrySet()) {
+            Log.d(TAG, ""+count);
+            Log.d(TAG, pair.getKey());
+            Log.d(TAG, ""+directions.size());
+            Log.d(TAG, directions.get(count.get()));
+            if(!routes.isEmpty()) {
+                int time = (int) Math.round(routes.get(count.get()).duration());
+                AtomicReference<String> units = new AtomicReference<>(" seconds");
+                if (time >= 60) {
+                    time = time / 60;
+                    units.set(" minutes");
+                }
+                int distance = (int) Math.round(routes.get(count.get()).distance());
+                poi_text.append(pair.getKey()).append(" is ").append(pair.getValue().get(1)).append("m ").append(" on your ").append(directions.get(count.get())).append("\n");
+                String msg = pair.getKey() + " is " + distance + "m or " + +time + units.get() + " on your " + directions.get(count.get()) + "\n";
+                count.getAndIncrement();
+                Point poi_point = Point.fromJson(pair.getValue().get(2));
+                if (bearingSwitch) {
+                    data.add(new String[] {location.getBearing()+"",calculateAverage(bearings_arr)+"",point.latitude()+"",point.longitude()+"", poi_point.latitude()+"",poi_point.longitude()+"",msg });
+                } else {
+                    if(!data.isEmpty()) {
+                        csvWriter(data);
+                        data = new ArrayList<String[]>();
+                    }
+                }
+            }
         }
         return poi_text;
     }
 
+    private void getRoute(Point origin, Point destination) {
+        Log.d(TAG, "getRoute:destination:"+destination.coordinates().toString());
+        Log.d(TAG, "getRoute:origin:"+origin.coordinates().toString());
+        NavigationRoute.builder(this)
+                .accessToken(getString(R.string.access_token))
+                .origin(origin)
+                .destination(destination)
+                .profile("walking")
+                .build()
+                .getRoute(new Callback<DirectionsResponse>() {
+                    @Override
+                    public void onResponse(Call<DirectionsResponse> call, Response<DirectionsResponse> response) {
+                        // You can get the generic HTTP info about the response
+                        Log.d(TAG, "Response code: " + response.code());
+                        if (response.body() == null) {
+                            Log.e(TAG, "No routes found, make sure you set the right user and access token.");
+                            return;
+                        } else if (response.body().routes().size() < 1) {
+                            Log.e(TAG, "No routes found");
+                            return;
+                        }
+                        DirectionsRoute route = response.body().routes().get(0);
+                        routes.add(route);
+                    }
+                    @Override
+                    public void onFailure(Call<DirectionsResponse> call, Throwable throwable) {
+                        Log.e(TAG, "Error: " + throwable.getMessage());
+                    }
+                });
+    }
+
     @SuppressLint("SimpleDateFormat")
     public void csvWriter(List<String[]> data) {
-        Log.d("csvWriter", data.toString());
+        Log.d(TAG,"csvWriter"+data.toString());
 
         File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
-
-        Log.d("PATH", path.getAbsolutePath());
         String file_ts = new SimpleDateFormat("yyyyMMdd'T'HHmmss").format(new Date());
-
         File file = new File(path, "Bearing_Test" + "_" + file_ts + ".csv");
 
         try {
             CSVWriter writer = new CSVWriter(new FileWriter(file), ',');
-            String[] entries = {"bearing","avgbearing","lat","lng"};
+            String[] entries = {"bearing","avg_bearing","user_lat","user_lng","poi_lat","poi_lng","message"};
             writer.writeNext(entries);
-            Log.d("FILE", file.getAbsolutePath());
             writer.writeAll(data);
-            Log.d("WRITER", data.toString());
             writer.close();
         } catch (IOException e) {
-            Log.e("MainActivity", "Caught IOException: " + e.getMessage());
+            Log.e(TAG, "Caught IOException: " + e.getMessage());
         }
 
 
@@ -844,6 +800,13 @@ public class MapsActivity extends AppCompatActivity implements
 
     @Override
     protected void onStop() {
+        if (mBound) {
+            // Unbind from the service. This signals to the service that this activity is no longer
+            // in the foreground, and the service can respond by promoting itself to a foreground
+            // service.
+            unbindService(mServiceConnection);
+            mBound = false;
+        }
         super.onStop();
         mapView.onStop();
     }
@@ -851,10 +814,6 @@ public class MapsActivity extends AppCompatActivity implements
     @Override
     public void onPause() {
         super.onPause();
-        if(announcer !=null){
-            announcer.stop();
-            announcer.shutdown();
-        }
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver);
         mapView.onPause();
     }
@@ -878,12 +837,6 @@ public class MapsActivity extends AppCompatActivity implements
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
-        if(announcer !=null){
-            announcer.stop();
-            announcer.shutdown();
-        }
-
         // Prevent leaks
         if (locationEngine != null) {
             locationEngine.removeLocationUpdates(callback);

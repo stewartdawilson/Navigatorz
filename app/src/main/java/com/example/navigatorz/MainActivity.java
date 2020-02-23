@@ -10,14 +10,11 @@ import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.location.Location;
-import android.os.Build;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
-import android.speech.tts.TextToSpeech;
-import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
 
 import android.Manifest;
@@ -115,13 +112,7 @@ public class MainActivity extends AppCompatActivity implements
     private FloatingActionButton mFabDecrease;
     private ImageButton mSettingsButton;
 
-    private boolean initialized;
-    private String queuedText;
-    private TextToSpeech tts;
-    private String msg;
-    String mostRecentUtteranceID;
-    private HashMap<String, String> points = new HashMap<>();
-    private SharedPreferences mSharedPreferences;
+
 
 
 
@@ -163,26 +154,6 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         myReceiver = new MyReceiver();
         setContentView(R.layout.activity_main);
-        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-
-
-        String speed = mSharedPreferences.getString("key_tts_speed", "1.0");
-
-
-        tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
-            @Override
-            public void onInit(int status) {
-                if(tts.getEngines().size() == 0){
-                    Toast.makeText(MainActivity.this,"No Engines Installed",Toast.LENGTH_LONG).show();
-                }else{
-                    if (status == TextToSpeech.SUCCESS){
-                        tts.setLanguage(Locale.UK);
-                        tts.setSpeechRate(Float.valueOf(speed));
-                        ttsInitialized();
-                    }
-                }
-            }
-        });
 
         broadcastReceiver = new BroadcastReceiver() {
             @Override
@@ -205,32 +176,7 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    private void ttsInitialized() {
-        tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
-            @Override
-            public void onStart(String utteranceId) {
-                Log.d(TAG, utteranceId+" "+msg);
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        // *** toast will not work if called from a background thread ***
-                        mAnnoucementstxt.setText(points.get(utteranceId));
-                    }
-                });
 
-            }
-
-            @Override
-            // this method will always called from a background thread.
-            public void onDone(String utteranceId) {
-            }
-
-            @Override
-            public void onError(String utteranceId) {
-
-            }
-        });
-    }
 
     @Override
     protected void onStart() {
@@ -463,7 +409,7 @@ public class MainActivity extends AppCompatActivity implements
                     } else {
                         Log.i(TAG, "Stopping Location Updates");
                         mService.removeLocationUpdates();
-                        tts.stop();
+                        mService.stopTTS();
                     }
                 }
                 break;
@@ -604,26 +550,13 @@ public class MainActivity extends AppCompatActivity implements
                 int confidence = intent.getIntExtra("confidence", 0);
                 handleUserActivity(type, confidence);
             }
-            ArrayList<String> messages = intent.getStringArrayListExtra(LocationUpdatesService.EXTRA_LOCATION);
-            Log.d(TAG, messages.toString());
-            points = new HashMap<>();
-            for (String m : messages) {
-                speak(m);
-            }
+            String name = intent.getStringExtra(LocationUpdatesService.EXTRA_LOCATION);
+            Log.d(TAG, "Received point: " +name);
+            mAnnoucementstxt.setText(name);
         }
     }
 
-    private void speak(String m) {
-        // set unique utterance ID for each utterance
-        mostRecentUtteranceID = (new Random().nextInt() % 9999999) + ""; // "" is String force
 
-        // set params
-        // *** this method will work for more devices: API 19+ ***
-        HashMap<String, String> params = new HashMap<>();
-        points.put(mostRecentUtteranceID, m);
-        params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, mostRecentUtteranceID);
-        tts.speak(m,TextToSpeech.QUEUE_ADD,params);
-    }
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
@@ -640,7 +573,6 @@ public class MainActivity extends AppCompatActivity implements
             case Utils.KEY_REQUESTING_HOTEL_UPDATES: setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_HOTEL_UPDATES, false), Utils.KEY_REQUESTING_HOTEL_UPDATES);break;
             case Utils.KEY_REQUESTING_STORE_UPDATES: setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_STORE_UPDATES, false), Utils.KEY_REQUESTING_STORE_UPDATES);break;
             case Utils.KEY_REQUESTING_BAR_UPDATES: setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_BAR_UPDATES, false), Utils.KEY_REQUESTING_BAR_UPDATES);break;
-            case "key_tts_speed": String speed = sharedPreferences.getString(s,"1.0"); tts.setSpeechRate(Float.valueOf(speed));break;
         }
 
     }
