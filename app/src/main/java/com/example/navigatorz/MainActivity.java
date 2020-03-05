@@ -514,12 +514,12 @@ public class MainActivity extends AppCompatActivity implements
             }
             case R.id.fab_main_increase_range: {
                 Integer radius = Utils.getCurrentRadius(this);
-                if (radius<60) {
+                if (radius<100) {
                     Log.i(TAG, "Increasing Radius:"+radius + "," +(radius+5));
                     Utils.updateRadius(this, (radius+5));
-
+                    Toast.makeText(this, "Increasing radius to "+(radius+5), Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(this, "At maximum radius (60m)", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "At maximum radius (100m)", Toast.LENGTH_SHORT).show();
                 }
                 break;
             }
@@ -528,6 +528,8 @@ public class MainActivity extends AppCompatActivity implements
                 if (radius>20) {
                     Log.i(TAG, "Decreasing Radius:" +radius + "," +(radius-5));
                     Utils.updateRadius(this, (radius-5));
+                    Toast.makeText(this, "Decreasing radius to "+(radius-5), Toast.LENGTH_SHORT).show();
+
                 } else {
                     Toast.makeText(this, "At minimum radius (20m)", Toast.LENGTH_SHORT).show();
                 }

@@ -2,21 +2,28 @@ package com.example.navigatorz;
 
 import android.location.Location;
 import android.util.Log;
+
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+
+
 
 public class CalculateDirection {
 
     private Location mylocation;
     private ArrayList<Integer> mybearings;
     private ArrayList<Location> tilequerylocs;
+    private  HashMap<Location, ArrayList<String>> poi;
     private String TAG = "CalculateDirection";
 
 
-    public CalculateDirection(Location mylocation, ArrayList<Integer> mybearings, ArrayList<Location> tilequerylocs) {
+    public CalculateDirection(Location mylocation, ArrayList<Integer> mybearings, ArrayList<Location> tilequerylocs,  HashMap<Location, ArrayList<String>> poi) {
         this.mylocation = mylocation;
         this.mybearings =  mybearings;
         this.tilequerylocs = tilequerylocs;
+        this.poi = poi;
     }
 
     public ArrayList<Integer> bearingsToLocations() {
@@ -42,7 +49,7 @@ public class CalculateDirection {
         return Math.round(sum);
     }
 
-    public ArrayList<String> bearingsToDirection() {
+    public void bearingsToDirection() {
         ArrayList<String> directions = new ArrayList<>();
 
         ArrayList<Integer> bearings_to_poi = bearingsToLocations();
@@ -64,7 +71,9 @@ public class CalculateDirection {
 
 
             bearing = (bearing-mybearing)%360;
+
             if (bearing<0) bearing += 360;
+
             int mybearingtemp = 0;
             int my_bearing_backtemp = 180;
 
@@ -72,12 +81,14 @@ public class CalculateDirection {
             Log.d(TAG+":MY CURRENT BEARING", mybearing.toString());
             Log.d(TAG+":MY CURRENT BEARING BACK", ""+my_bearing_back);
 
-            int mybearingThres1 = (mybearingtemp+10)%360;
-            int mybearingThres2 = (mybearingtemp-10)%360;
+            int mybearingThres1 = (mybearingtemp+15)%360;
+            int mybearingThres2 = (mybearingtemp-15)%360;
             int mybearingbackThres1 = (my_bearing_backtemp+10)%360;
             int mybearingbackThres2 = (my_bearing_backtemp-10)%360;
             if (mybearingThres2<0) mybearingThres2 += 360;
             if (mybearingbackThres2<0) mybearingbackThres2 += 360;
+
+
 
 
 
@@ -90,27 +101,28 @@ public class CalculateDirection {
 
 
 
-            if(bearing>mybearingThres1 && bearing<mybearingbackThres2) {
+
+            if(bearing>mybearingThres1 && bearing<130) {
                 Log.d(TAG+":Adding RIGHT", bearing.toString());
                 String direction = "Right";
-                directions.add(direction);
-            } else if(bearing<mybearingThres2 && bearing>mybearingbackThres1) {
+                poi.get(tilequerylocs.get(i)).add(direction);
+            } else if(bearing<mybearingThres2 && bearing>230) {
                 Log.d(TAG+":Adding LEFT",bearing.toString());
                 String direction = "Left";
-                directions.add(direction);
+                poi.get(tilequerylocs.get(i)).add(direction);
+
             } else if((bearing<=mybearingThres1 || bearing>=mybearingThres2) || bearing==mybearing) {
                 Log.d(TAG+":Adding FRONT",bearing.toString());
                 String direction = "Front";
-                directions.add(direction);
-            } else if((bearing>=mybearingbackThres2 && bearing<=mybearingbackThres1) || bearing==my_bearing_back) {
+                poi.get(tilequerylocs.get(i)).add(direction);
+
+            } else if((bearing>=120 && bearing<=240) || bearing==my_bearing_back) {
                 Log.d(TAG+":Adding BEHIND",bearing.toString());
                 String direction = "Behind";
-                directions.add(direction);
+                poi.get(tilequerylocs.get(i)).add(direction);
+
             }
         }
-        return directions;
-
-
     }
 
 }

@@ -7,16 +7,11 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.location.Location;
-import android.media.Ringtone;
-import android.media.RingtoneManager;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
@@ -34,10 +29,8 @@ import retrofit2.Response;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.location.DetectedActivity;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -52,18 +45,14 @@ import com.mapbox.api.tilequery.MapboxTilequery;
 import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.FeatureCollection;
 import com.mapbox.geojson.Point;
-import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.geometry.LatLng;
-import com.mapbox.services.android.navigation.ui.v5.route.NavigationMapRoute;
 import com.mapbox.services.android.navigation.v5.navigation.NavigationRoute;
 
-import java.util.AbstractQueue;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Random;
 
 /**
@@ -103,12 +92,12 @@ public class LocationUpdatesService extends Service implements SharedPreferences
     /**
      * The desired interval for announcements when user is walking. Inexact. Updates may be more or less frequent.
      */
-    private static final long WALKING_UPDATE_INTERVAL_IN_MILLISECONDS = 30000;
+    private static final long WALKING_UPDATE_INTERVAL_IN_MILLISECONDS = 8000;
 
     /**
      * The desired interval for announcements when user is still. Inexact. Updates may be more or less frequent.
      */
-    private static final long STILL_UPDATE_INTERVAL_IN_MILLISECONDS = 30000;
+    private static final long STILL_UPDATE_INTERVAL_IN_MILLISECONDS = 15000;
 
     /**
      * The identifier for the notification displayed for the foreground service.
@@ -146,16 +135,18 @@ public class LocationUpdatesService extends Service implements SharedPreferences
      */
     private Location mLocation;
 
-    private TextToSpeech tts;
+    private TextToSpeech tts = null;
     private boolean still = false;
     private ArrayList<Location> tilequerylocs = new ArrayList<>();
-    private HashMap<String, ArrayList<String>> poi = new HashMap<>();
+    private HashMap<Location, ArrayList<String>> poi_explore = new HashMap<Location, ArrayList<String>>();
     private ArrayList<Integer> bearings_arr = new ArrayList<Integer>();
     private ArrayList<DirectionsRoute> routes = new ArrayList<>();
+    private ArrayList<Point> points = new ArrayList<>();
+
     private SharedPreferences mSharedPreferences;
     private String measurement_type = "0";
     String mostRecentUtteranceID;
-    private HashMap<String, String> points = new HashMap<>();
+    private HashMap<String, String> point_data = new HashMap<>();
 
 
 
@@ -266,12 +257,12 @@ public class LocationUpdatesService extends Service implements SharedPreferences
             @Override
             public void onStart(String utteranceId) {
 
-                if(!points.isEmpty()) {
+                if(!point_data.isEmpty()) {
                     Intent intent = new Intent(ACTION_BROADCAST);
-                    Log.d(TAG, "Sending point: " +points.toString());
+                    Log.d(TAG, "Sending point: " + point_data.toString());
 
-                    Log.d(TAG, "Sending point: " +points.get(utteranceId));
-                    intent.putExtra(EXTRA_LOCATION, points.get(utteranceId));
+                    Log.d(TAG, "Sending point: " + point_data.get(utteranceId));
+                    intent.putExtra(EXTRA_LOCATION, point_data.get(utteranceId));
                     LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
                 }
             }
@@ -295,7 +286,7 @@ public class LocationUpdatesService extends Service implements SharedPreferences
         // set params
         // *** this method will work for more devices: API 19+ ***
         HashMap<String, String> params = new HashMap<>();
-        points.put(mostRecentUtteranceID, m);
+        point_data.put(mostRecentUtteranceID, m);
         Log.d(TAG, m);
         params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, mostRecentUtteranceID);
         tts.speak(m,TextToSpeech.QUEUE_ADD,params);
@@ -449,51 +440,7 @@ public class LocationUpdatesService extends Service implements SharedPreferences
         makeTilequeryApiCall(point);
     }
 
-    public ArrayList<String> buildOutput(ArrayList<String> directions) {
-        ArrayList<String> poi_text = new ArrayList<>();
-        int count = 0;
-        points = new HashMap<>();
-        Log.d(TAG, "POI size: "+poi.size());
-        Log.d(TAG, "POI : "+poi.toString());
 
-
-        for (Map.Entry<String, ArrayList<String>> pair : poi.entrySet()) {
-            Log.d(TAG, "POI size: "+poi.size());
-
-            Log.d(TAG,"COUNT"+count);
-            Log.d(TAG,"PAIR"+ pair.getKey());
-            Log.d(TAG,"DIRECTIONSIZE"+directions.size());
-            Log.d(TAG,"DIRECTIONS"+directions.get(count));
-            if(!routes.isEmpty()) {
-                if(measurement_type.equals("time")) {
-                    int time = (int) Math.round(routes.get(count).duration());
-                    String units = " seconds";
-                    if (time>=60) {
-                        time = time/60;
-                        units = " minutes";
-                    }
-                    poi_text.add(pair.getKey() + " is " + time + units + " on your " + directions.get(count)+"\n");
-                    String msg = pair.getKey() + " is " + time + units + " on your " + directions.get(count)+"\n";
-                    count++;
-                    Log.d(TAG,"Speaking");
-                    speak(msg);
-                } else {
-                    int distance  = (int) Math.round(routes.get(count).distance());
-
-                    poi_text.add(pair.getKey() + " is " + distance + "m on your " + directions.get(count)+"\n");
-                    String msg = pair.getKey() + " is " + distance + "m on your " + directions.get(count)+"\n";
-                    count++;
-                    Log.d(TAG,"Speaking");
-
-                    speak(msg);
-                }
-
-            }
-
-        }
-        routes = new ArrayList<>();
-        return poi_text;
-    }
 
     private LatLng truncateLatLng(Location location, double trunc) {
         double lat = (Math.floor(location.getLatitude()*trunc))/trunc;
@@ -531,7 +478,7 @@ public class LocationUpdatesService extends Service implements SharedPreferences
                             Log.d(TAG, "No features");
                         } else {
                             tilequerylocs = new ArrayList<>();
-                            poi = new HashMap<>();
+                            poi_explore = new HashMap<Location, ArrayList<String>>();
                             Log.d("FEATURELIST-POI", featureList.toString());
                             extractDataPOI(featureList, point);
                         }
@@ -559,6 +506,7 @@ public class LocationUpdatesService extends Service implements SharedPreferences
     }
 
     public void extractDataPOI(List<Feature> featureList, Point point) {
+        points = new ArrayList<>();
         for (int i =0; i<featureList.size(); i++) {
             Feature feature = featureList.get(i);
             Log.d("ExtractDataPOI:", feature.toString());
@@ -573,6 +521,7 @@ public class LocationUpdatesService extends Service implements SharedPreferences
             }
 
             Point feature_point = (Point) feature.geometry();
+            points.add(feature_point);
             JsonObject tilequery = (JsonObject) props.get("tilequery");
 
             ArrayList<ArrayList<String>> filters = checkLocationTypeFilters();
@@ -588,16 +537,17 @@ public class LocationUpdatesService extends Service implements SharedPreferences
                     String location_type = props.get("category_en").getAsString();
                     details.add(location_type);
 
-                } else {
-                    String location_type = "";
-                    details.add(location_type);
+                } else if(props.get("mode")!=null){
+                    String type = props.get("mode").getAsString();
+                    String type_formatted = type.substring(0, 1).toUpperCase() + type.substring(1) + " stop";
+                    details.add(type_formatted);
                 }
                 if(!classes.isEmpty() || !category.isEmpty() || !transit.isEmpty()) {
                     if(classes.contains(props.get("class").getAsString()) || category.contains(props.get("category_en").getAsString()) || transit.contains(tilequery.get("layer").getAsString())) {
                         Log.d(TAG, "Is accepted");
                         String location_name = props.get("name").getAsString();
 
-                        double distance =  (double) Math.round(tile.get("distance").getAsDouble());
+                        int distance =  (int) Math.round(tile.get("distance").getAsInt());
 
                         double longitude = feature_point.longitude();
                         double latitude = feature_point.latitude();
@@ -608,10 +558,10 @@ public class LocationUpdatesService extends Service implements SharedPreferences
                         tilequerylocs.add(loc);
 
 
-                        details.add(Double.toString(distance));
-                        poi.put(location_name, details);
-
-                        getRoute(point, feature_point);
+                        details.add(Integer.toString(distance));
+                        details.add(feature_point.toJson());
+                        details.add(location_name);
+                        poi_explore.put(loc, details);
                     } else {
                         Log.d(TAG, "Not accepted");
                     }
@@ -620,7 +570,7 @@ public class LocationUpdatesService extends Service implements SharedPreferences
                     String location_name = props.get("name").getAsString();
 
 
-                    double distance =  (double) Math.round(tile.get("distance").getAsDouble());
+                    int distance =  (int) Math.round(tile.get("distance").getAsInt());
 
                     double longitude = feature_point.longitude();
                     double latitude = feature_point.latitude();
@@ -631,14 +581,27 @@ public class LocationUpdatesService extends Service implements SharedPreferences
                     tilequerylocs.add(loc);
 
 
-                    details.add(Double.toString(distance));
-                    poi.put(location_name, details);
 
-                    getRoute(point, feature_point);
+                    details.add(Integer.toString(distance));
+                    details.add(feature_point.toJson());
+                    details.add(location_name);
+                    poi_explore.put(loc, details);
                 }
             }
         }
+        getRoutes(points,point);
     }
+
+    public void getRoutes(ArrayList<Point> points, Point user_point) {
+        Log.d(TAG, "Getting routes");
+        routes = new ArrayList<>();
+        Log.d(TAG, routes.size()+"");
+        for(int i=0;i<points.size();i++) {
+            getRoute(user_point, points.get(i));
+        }
+
+    }
+
 
     private void processPointsOfInterest() {
         Log.d(TAG, "Location Bearing:" +mLocation.getBearing());
@@ -647,9 +610,12 @@ public class LocationUpdatesService extends Service implements SharedPreferences
 
         Log.d(TAG+":tilequerylocs", tilequerylocs.toString());
 
-        CalculateDirection cd = new CalculateDirection(mLocation, bearings_arr, tilequerylocs);
-        ArrayList<String> directions = cd.bearingsToDirection();
-        buildOutput(directions);
+
+
+
+        CalculateDirection cd = new CalculateDirection(mLocation, bearings_arr, tilequerylocs,poi_explore);
+        cd.bearingsToDirection();
+        buildOutput();
 
         // Update notification content if running as a foreground service.
         if (serviceIsRunningInForeground(this)) {
@@ -658,7 +624,7 @@ public class LocationUpdatesService extends Service implements SharedPreferences
     }
 
     private void updateBearings(Integer mybearing) {
-        if(bearings_arr.size()<5) {
+        if(bearings_arr.size()<4) {
             bearings_arr.add(mybearing);
         } else {
             bearings_arr.remove(0);
@@ -727,7 +693,10 @@ public class LocationUpdatesService extends Service implements SharedPreferences
                         }
                         DirectionsRoute route = response.body().routes().get(0);
                         routes.add(route);
-                        if(routes.size()==poi.size()) {
+                        Log.d(TAG, routes.size()+" Routes size");
+                        Log.d(TAG, poi_explore.size()+" POI size");
+
+                        if(routes.size()==points.size()) {
                             processPointsOfInterest();
                         }
                     }
@@ -736,6 +705,57 @@ public class LocationUpdatesService extends Service implements SharedPreferences
                         Log.e(TAG, "Error: " + throwable.getMessage());
                     }
                 });
+        processPointsOfInterest();
+
+    }
+
+    public ArrayList<String> buildOutput() {
+        ArrayList<String> poi_text = new ArrayList<>();
+        int count = 0;
+        point_data = new HashMap<>();
+        Log.d(TAG, "POI : "+poi_explore.toString());
+
+
+        for (Map.Entry<Location, ArrayList<String>> pair : poi_explore.entrySet()) {
+
+            if(pair.getValue().get(4).equals("Behind")) {
+                continue;
+            }
+            Log.d(TAG, "POI size: "+poi_explore.size());
+
+            Log.d(TAG,"COUNT: "+count);
+            Log.d(TAG,"PAIR: "+ pair.getKey());
+            Log.d(TAG,"Routes size: "+routes.size());
+            if(!routes.isEmpty()) {
+
+                String msg = "";
+                if(measurement_type.equals("time")) {
+                    int time = (int) Math.round(routes.get(count).duration());
+                    String units = " seconds";
+                    if (time>=60) {
+                        time = time/60;
+                        units = " minutes";
+                    }
+                    msg = pair.getValue().get(0) + ": "+ pair.getValue().get(3) + " is " + time + units + " on your "+ pair.getValue().get(4) +"\n";
+                    count++;
+                    Log.d(TAG,"Speaking");
+                    speak(msg);
+                } else {
+                    int distance  = Integer.parseInt(pair.getValue().get(1));
+                    if(distance<=5) {
+                        msg = pair.getValue().get(0) + ": "+  pair.getValue().get(3) + " is right next to you\n";
+                    } else {
+                        msg = pair.getValue().get(0) + ": " +  pair.getValue().get(3) + " is " + distance + "m on your " +  pair.getValue().get(4)+ "\n";
+                    }
+                    count++;
+                    Log.d(TAG,"Speaking");
+                    speak(msg);
+                }
+
+            }
+
+        }
+        return poi_text;
     }
 
 
@@ -749,13 +769,12 @@ public class LocationUpdatesService extends Service implements SharedPreferences
             Log.d(TAG, "User is still");
             mLocationRequest.setInterval(STILL_UPDATE_INTERVAL_IN_MILLISECONDS);
             mLocationRequest.setFastestInterval(15000);
-
             mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         } else {
             Log.e(TAG, "User not still");
             mLocationRequest.setInterval(WALKING_UPDATE_INTERVAL_IN_MILLISECONDS);
-            mLocationRequest.setFastestInterval(20000);
+            mLocationRequest.setFastestInterval(8000);
             mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         }
     }

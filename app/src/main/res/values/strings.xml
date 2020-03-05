@@ -50,4 +50,17 @@
     <string name="attachment_summary_off">Only download attachments when manually requested</string>
     <string name="decrease_increase_range">Decrease/Increase Range</string>
 
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="get_started">Get started</string>
+    <string name="next">Next</string>
+    <string name="navigation_mode">Navigation Mode</string>
+    <string name="exploration_mode">Exploration Mode</string>
+    <string name="welcome">Welcome!</string>
+    <string name="welcome_text">Learn how Navigatorz works by following this tutorial. Use the buttons below or swipe with your fingers to the left to proceed.</string>
+    <string name="navigation_text">Navigation mode is access via the button displaying the image above. In this mode there is a map view on which you can see the points of interest around you.\n\nYou can also search for locations on this mode to receive specific location details such as its location and how far/long you are away. Furthermore you can receive turn-by-turn navigation to be guided to somewhere specific. </string>
+    <string name="exploration_text">After this tutorial you\'ll be taken to the Main Menu screen aka Exploration mode is.\n\nExploration mode allows you to receive a dynamic stream of announcements telling you abou the points of interest around you. Also on this page is the location filters. These allow you to whitelist only specific so you\'ll only be informed of them.\n\nFinally at the top of the Main Menu are buttons for you to increase the radius at which locations will be discoverable at as well as a button to take you to the settings menu.</string>
+    <string name="slide_1_title">Welcome!</string>
+    <string name="start">Start</string>
+    <string name="back">Back</string>
+
 </resources>

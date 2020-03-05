@@ -122,11 +122,10 @@ public class MapsActivity extends AppCompatActivity implements
     private boolean bearingSwitch = false;
     private List<String[]> data = new ArrayList<String[]>();
 
-    private Button btnStartTracking, btnStopTracking, navButton;
+    private Button btnStartTracking, btnStopTracking;
 
     BroadcastReceiver broadcastReceiver;
     private ArrayList<DirectionsRoute> routes = new ArrayList<>();
-    private ArrayList<String> messages = new ArrayList<>();
 
 
 
@@ -165,10 +164,10 @@ public class MapsActivity extends AppCompatActivity implements
 
     private LocationEngine locationEngine;
     private ArrayList<Location> tilequerylocs = new ArrayList<>();
-    private HashMap<String, ArrayList<String>> poi = new HashMap<>();
+    private HashMap<Location, ArrayList<String>> poi_navigation = new HashMap<>();
     private ArrayList<Integer> bearings_arr = new ArrayList<Integer>();
-    private long DEFAULT_INTERVAL_IN_MILLISECONDS = 10000;
-    private long DEFAULT_MAX_WAIT_TIME = 20000;
+    private long DEFAULT_INTERVAL_IN_MILLISECONDS = 8000;
+    private long DEFAULT_MAX_WAIT_TIME = 8000;
 
     // Variables needed to listen to location updates
     private MapsActivityLocationCallback callback = new MapsActivityLocationCallback(this);
@@ -201,7 +200,7 @@ public class MapsActivity extends AppCompatActivity implements
         btnStartTracking.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startTracking();
+                bearings_arr = new ArrayList<>();
             }
         });
 
@@ -237,6 +236,10 @@ public class MapsActivity extends AppCompatActivity implements
                     Toast.makeText(getApplicationContext(), "Collecting data!",Toast.LENGTH_LONG).show();
                     startBtn.setBackgroundColor(Color.GREEN);
                 } else {
+                    if(!data.isEmpty()) {
+                        csvWriter(data);
+                        data = new ArrayList<String[]>();
+                    }
                     Toast.makeText(getApplicationContext(), "Finished collecting data!",Toast.LENGTH_LONG).show();
                     startBtn.setBackgroundColor(Color.RED);
 
@@ -265,16 +268,16 @@ public class MapsActivity extends AppCompatActivity implements
                 case DetectedActivity.STILL: {
                     prev_type = DetectedActivity.STILL;
                     Log.e(TAG, "User is still");
-                    mService.removeLocationUpdates();
-                    mService.createLocationRequest(true);
-                    mService.requestLocationUpdates();
+                    //mService.removeLocationUpdates();
+                    //mService.createLocationRequest(true);
+                    //mService.requestLocationUpdates();
                     break;
                 }
                 case DetectedActivity.WALKING | DetectedActivity.UNKNOWN: {
                     prev_type = DetectedActivity.UNKNOWN;
-                    mService.removeLocationUpdates();
-                    mService.createLocationRequest(false);
-                    mService.requestLocationUpdates();
+                    //mService.removeLocationUpdates();
+                    //mService.createLocationRequest(false);
+                    //mService.requestLocationUpdates();
                     break;
                 }
             }
@@ -438,7 +441,7 @@ public class MapsActivity extends AppCompatActivity implements
                                     getString(R.string.no_tilequery_response_features_toast), Toast.LENGTH_SHORT).show();
                         } else {
                             tilequerylocs = new ArrayList<>();
-                            poi = new HashMap<>();
+                            poi_navigation = new HashMap<>();
                                 Log.d(TAG, featureList.toString());
 
                             extractDataPOI(featureList, point);
@@ -513,7 +516,8 @@ public class MapsActivity extends AppCompatActivity implements
                 details.add(location_type);
                 details.add(Double.toString(distance));
                 details.add(p.toJson());
-                poi.put(location_name, details);
+                details.add(location_name);
+                poi_navigation.put(loc, details);
                 getRoute(Point.fromLngLat(point.getLongitude(),point.getLatitude()),p);
             }
         }
@@ -565,6 +569,7 @@ public class MapsActivity extends AppCompatActivity implements
 
         LocationEngineRequest request = new LocationEngineRequest.Builder(DEFAULT_INTERVAL_IN_MILLISECONDS)
                 .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
+                .setFastestInterval(DEFAULT_INTERVAL_IN_MILLISECONDS)
                 .setMaxWaitTime(DEFAULT_MAX_WAIT_TIME).build();
 
         locationEngine.requestLocationUpdates(request, callback, getMainLooper());
@@ -614,16 +619,20 @@ public class MapsActivity extends AppCompatActivity implements
             MapsActivity activity = activityWeakReference.get();
 
 
+
+
             if (activity != null) {
                 Location location = result.getLastLocation();
                 initSearchFab(location);
-                Log.d(TAG, "Location" +location);
+                Log.d(TAG, "Location: " +location);
 
                 if (location == null) {
                     return;
                 }
                 // Pass the new location to the Maps SDK's LocationComponent
                 if (activity.mapboxMap != null && result.getLastLocation() != null) {
+                    Log.d(TAG, "Location Accuracy: "+result.getLastLocation().getAccuracy());
+                    Log.d(TAG, "Bearing Accuracy: "+result.getLastLocation().getBearingAccuracyDegrees());
 
                     LatLng point = truncateLatLng(location, 1e4);
 
@@ -632,17 +641,20 @@ public class MapsActivity extends AppCompatActivity implements
 
                     Log.d(TAG, "Bearing" +location.getBearing());
                     Integer mybearing =  Math.round(location.getBearing());
-                    if(bearings_arr.size()<6) {
+                    if(bearings_arr.size()<4) {
                         bearings_arr.add(mybearing);
                     } else {
+                        Log.d(TAG, bearings_arr.toString());
                         bearings_arr.remove(0);
                         bearings_arr.add(mybearing);
+                        Log.d(TAG, bearings_arr.toString());
                     }
                     bearingTextView.setText(location.getBearing()+"");
 
-                    CalculateDirection cd = new CalculateDirection(location, bearings_arr, tilequerylocs);
-                    ArrayList<String> directions = cd.bearingsToDirection();
-                    StringBuilder output = buildOutput(directions, location, Point.fromLngLat(point.getLatitude(), point.getLongitude()));
+                    CalculateDirection cd = new CalculateDirection(location, bearings_arr, tilequerylocs,poi_navigation);
+                    cd.bearingsToDirection();
+                    StringBuilder output = buildOutput(location, Point.fromLngLat(point.getLatitude(), point.getLongitude()));
+
                     Log.d(TAG, output.toString());
 
 
@@ -694,16 +706,19 @@ public class MapsActivity extends AppCompatActivity implements
     }
 
 
-    public StringBuilder buildOutput(ArrayList<String> directions, Location location, Point point) {
+    public StringBuilder buildOutput(Location location, Point point)  {
         StringBuilder poi_text = new StringBuilder();
 
         AtomicInteger count = new AtomicInteger();
-        for (Entry<String, ArrayList<String>> pair : poi.entrySet()) {
+        String msg = "";
+        for (Entry<Location, ArrayList<String>> pair : poi_navigation.entrySet()) {
             Log.d(TAG, ""+count);
-            Log.d(TAG, pair.getKey());
-            Log.d(TAG, ""+directions.size());
-            Log.d(TAG, directions.get(count.get()));
+            Log.d(TAG, pair.getKey()+"");
+            Log.d(TAG, pair.getValue().get(4));
             if(!routes.isEmpty()) {
+                if(pair.getValue().get(4).equals("Behind")) {
+                    continue;
+                }
                 int time = (int) Math.round(routes.get(count.get()).duration());
                 AtomicReference<String> units = new AtomicReference<>(" seconds");
                 if (time >= 60) {
@@ -711,17 +726,17 @@ public class MapsActivity extends AppCompatActivity implements
                     units.set(" minutes");
                 }
                 int distance = (int) Math.round(routes.get(count.get()).distance());
-                poi_text.append(pair.getKey()).append(" is ").append(pair.getValue().get(1)).append("m ").append(" on your ").append(directions.get(count.get())).append("\n");
-                String msg = pair.getKey() + " is " + distance + "m or " + +time + units.get() + " on your " + directions.get(count.get()) + "\n";
+                if(distance<=5) {
+                    poi_text.append(pair.getValue().get(3)).append(" is right next to you").append("\n");
+                    msg = pair.getValue().get(3)+ " is right next to you\n";
+                } else {
+                    poi_text.append(pair.getValue().get(3)).append(" is ").append(pair.getValue().get(1)).append("m ").append(" on your ").append(pair.getValue().get(4)).append("\n");
+                    msg = pair.getValue().get(3) + " is " + pair.getValue().get(1) + "m or " + +time + units.get() + " on your " + pair.getValue().get(4) + "\n";
+                }
                 count.getAndIncrement();
                 Point poi_point = Point.fromJson(pair.getValue().get(2));
                 if (bearingSwitch) {
                     data.add(new String[] {location.getBearing()+"",calculateAverage(bearings_arr)+"",point.latitude()+"",point.longitude()+"", poi_point.latitude()+"",poi_point.longitude()+"",msg });
-                } else {
-                    if(!data.isEmpty()) {
-                        csvWriter(data);
-                        data = new ArrayList<String[]>();
-                    }
                 }
             }
         }
