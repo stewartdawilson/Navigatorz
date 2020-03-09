@@ -224,7 +224,7 @@ public class LocationUpdatesService extends Service implements SharedPreferences
                     mServiceHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(LocationUpdatesService.this.getApplicationContext(),"My Awesome service toast...",Toast.LENGTH_SHORT).show();
+                            Toast.makeText(LocationUpdatesService.this.getApplicationContext(),"No text-to-speech engine available",Toast.LENGTH_SHORT).show();
                         }
                     });
                 }else{

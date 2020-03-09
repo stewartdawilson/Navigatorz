@@ -6,28 +6,26 @@
     <color name="yellow">#ffff00</color>
 
     <!-- Screens background color-->
-    <color name="bg_screen1">#16c266</color>
-    <color name="bg_screen2">#90c2bb</color>
+    <color name="bg_screen1">#444444</color>
+    <color name="bg_screen2">#444444</color>
     <color name="bg_screen3">#444444</color>
 
 
     <!-- dots inactive colors -->
-    <color name="dot_dark_screen1">#39d1ba</color>
-    <color name="dot_dark_screen2">#14a895</color>
+    <color name="dot_dark_screen">#39d1ba</color>
 
     <!-- dots active colors -->
-    <color name="dot_light_screen1">#8de7f9</color>
-    <color name="dot_light_screen2">#8cf9eb</color>
+    <color name="dot_light_screen">#8cf9eb</color>
 
     <array name="array_dot_active">
-        <item>@color/dot_light_screen1</item>
-        <item>@color/dot_light_screen2</item>
-        <item>@color/dot_light_screen2</item>
+        <item>@color/dot_light_screen</item>
+        <item>@color/dot_light_screen</item>
+        <item>@color/dot_light_screen</item>
     </array>
 
     <array name="array_dot_inactive">
-        <item>@color/dot_dark_screen1</item>
-        <item>@color/dot_dark_screen2</item>
-        <item>@color/dot_dark_screen2</item>
+        <item>@color/dot_dark_screen</item>
+        <item>@color/dot_dark_screen</item>
+        <item>@color/dot_dark_screen</item>
     </array>
 </resources>

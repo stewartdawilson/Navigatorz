@@ -1,6 +1,7 @@
 package com.example.navigatorz;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import retrofit2.Call;
@@ -18,6 +19,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.mapbox.android.core.location.LocationEngine;
@@ -54,6 +56,7 @@ import com.mapbox.services.android.navigation.ui.v5.route.NavigationMapRoute;
 import com.mapbox.services.android.navigation.v5.navigation.NavigationRoute;
 
 import java.lang.ref.WeakReference;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconAllowOverlap;
@@ -88,9 +91,15 @@ public class NavigateActivity extends AppCompatActivity implements OnMapReadyCal
 
     private Intent intent_search;
     private Button nav_button;
+    private TextView txtCategory;
+    private TextView txtPlaceName;
+    private TextView txtPhone;
+    private TextView txtAddress;
+
 
     // Variables needed to listen to location updates
     private MainActivityLocationCallback callback = new MainActivityLocationCallback(this);
+    private boolean navInit = false;
 
 
     @Override
@@ -100,6 +109,8 @@ public class NavigateActivity extends AppCompatActivity implements OnMapReadyCal
 
         Intent intent = getIntent();
         intent_search = intent.getParcelableExtra(Intent.EXTRA_INTENT);
+
+
 
 
 
@@ -113,6 +124,12 @@ public class NavigateActivity extends AppCompatActivity implements OnMapReadyCal
         mapView = findViewById(R.id.mapView2);
         mapView.onCreate(savedInstanceState);
         mapView.getMapAsync(this);
+
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setHomeActionContentDescription("Back to Navigation Map");
+        }
     }
 
     @SuppressWarnings( {"MissingPermission"})
@@ -126,6 +143,13 @@ public class NavigateActivity extends AppCompatActivity implements OnMapReadyCal
                 addSearchLayer(style);
 
                 nav_button = findViewById(R.id.button_nav);
+
+                txtCategory = findViewById(R.id.txtCategory);
+                txtPlaceName = findViewById(R.id.txtPlaceName);
+                txtPhone = findViewById(R.id.txtPhone);
+                txtAddress = findViewById(R.id.txtAddress);
+
+
                 nav_button.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -224,8 +248,6 @@ public class NavigateActivity extends AppCompatActivity implements OnMapReadyCal
 
             if (activity != null) {
                 Location location = result.getLastLocation();
-                Log.d("LOCATION", "" +location);
-
 
                 if (location == null) {
                     return;
@@ -233,8 +255,10 @@ public class NavigateActivity extends AppCompatActivity implements OnMapReadyCal
                 // Pass the new location to the Maps SDK's LocationComponent
                 if (activity.mapboxMap != null && result.getLastLocation() != null) {
                     activity.mapboxMap.getLocationComponent().forceLocationUpdate(result.getLastLocation());
-                    initNavigationMap(intent_search);
-
+                    if(!navInit) {
+                        navInit = true;
+                        initNavigationMap(intent_search);
+                    }
                 }
             }
         }
@@ -340,6 +364,39 @@ public class NavigateActivity extends AppCompatActivity implements OnMapReadyCal
         // Retrieve selected location's CarmenFeature
         CarmenFeature selectedCarmenFeature;
         selectedCarmenFeature = PlaceAutocomplete.getPlace(data);
+
+        selectedCarmenFeature.address();
+        Log.d(TAG, selectedCarmenFeature.placeName());
+
+        txtPlaceName.setText("Name: " +selectedCarmenFeature.text());
+        txtAddress.setText("Address: " +selectedCarmenFeature.placeName());
+        try {
+            String categories = selectedCarmenFeature.properties().get("category").getAsString();
+            String categories_arr[] = categories.trim().split("\\s*,\\s*");
+            String category = categories_arr[categories_arr.length-1];
+
+            String category_formatted = category.substring(0, 1).toUpperCase() + category.substring(1);
+
+            txtCategory.setText("Place Category: " +category_formatted);
+            Log.d(TAG, category_formatted);
+
+        } catch (NullPointerException e)  {
+            String category = "No category available";
+            Log.d(TAG, category);
+            txtCategory.setText("Place Category: " +category);
+        }
+
+        try {
+            String tel = selectedCarmenFeature.properties().get("tel").getAsString();
+            txtPhone.setText("Phone Number: " +tel);
+            Log.d(TAG, tel);
+
+        } catch (NullPointerException e)  {
+            String tel = "No telephone available";
+            Log.d(TAG, tel);
+            txtPhone.setText("Phone Number: " +tel);
+        }
+
 
         // Create a new FeatureCollection and add a new Feature to it using selectedCarmenFeature above.
         // Then retrieve and update the source designated for showing a selected location's symbol layer icon

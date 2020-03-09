@@ -13,6 +13,7 @@
         <ImageView
             android:layout_width="@dimen/img_width_height"
             android:layout_height="@dimen/img_width_height"
+            android:importantForAccessibility="no"
             android:src="@drawable/ic_map" />
 
         <TextView

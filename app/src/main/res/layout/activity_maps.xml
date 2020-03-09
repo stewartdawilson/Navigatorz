@@ -98,6 +98,7 @@
                 android:clickable="true"
                 android:scaleType="centerInside"
                 mapbox:fabSize="normal"
+                android:contentDescription="Location search"
                 mapbox:layout_constraintBottom_toBottomOf="parent"
                 mapbox:layout_constraintEnd_toEndOf="parent"
                 mapbox:layout_constraintHorizontal_bias="0.981"

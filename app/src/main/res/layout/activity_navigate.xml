@@ -8,23 +8,86 @@
 
     <com.mapbox.mapboxsdk.maps.MapView
         android:id="@+id/mapView2"
-        android:layout_width="0dp"
-        android:layout_height="314dp"
+        android:layout_width="434dp"
+        android:layout_height="338dp"
+        app:layout_constraintBottom_toTopOf="@+id/textView5"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0" />
 
     <Button
         android:id="@+id/button_nav"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/navigation"
+        android:layout_width="171dp"
+        android:layout_height="83dp"
+        android:layout_marginBottom="44dp"
+        android:background="@drawable/roundcornerblack"
+        android:contentDescription="Start navigation"
+        android:text="Navigate"
+        android:textAllCaps="false"
+        android:textColor="@color/mapbox_plugins_white"
+        android:textSize="30sp"
+        android:typeface="normal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/mapView2"
-        app:layout_constraintVertical_bias="0.246" />
+        app:layout_constraintHorizontal_bias="0.509"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/textView5"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:text="Place Details"
+        android:textColor="#444444"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/txtPlaceName"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/txtAddress"
+        android:layout_width="322dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="76dp"
+        android:textColor="#444444"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toTopOf="@+id/button_nav"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.505"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/txtPlaceName"
+        android:layout_width="322dp"
+        android:layout_height="23dp"
+        android:textColor="#444444"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toTopOf="@+id/txtCategory"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.505"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/txtPhone"
+        android:layout_width="322dp"
+        android:layout_height="wrap_content"
+        android:textColor="#444444"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toTopOf="@+id/txtAddress"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/txtCategory"
+        android:layout_width="322dp"
+        android:layout_height="wrap_content"
+        android:textColor="#444444"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toTopOf="@+id/txtPhone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

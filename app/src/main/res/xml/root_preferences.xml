@@ -46,12 +46,11 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory app:title="Miscellaneous"/>
-    <EditTextPreference
-        android:defaultValue="test"
-        android:key="edit_text_preference_1"
-        android:selectAllOnFocus="true"
-        android:singleLine="true"
-        android:title="Edit text preference" />
+    <PreferenceCategory app:title="Miscellaneous">
+        <Preference android:title="Start tutorial"
+            android:key="key_tutorial"/>
+
+    </PreferenceCategory>
+
 
 </PreferenceScreen>
