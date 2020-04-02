@@ -728,7 +728,7 @@ public class LocationUpdatesService extends Service implements SharedPreferences
             Log.d(TAG,"Routes size: "+routes.size());
             if(!routes.isEmpty()) {
 
-                String msg = "";
+                String msg;
                 if(measurement_type.equals("time")) {
                     int time = (int) Math.round(routes.get(count).duration());
                     String units = " seconds";

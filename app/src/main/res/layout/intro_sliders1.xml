@@ -18,6 +18,7 @@
             android:importantForAccessibility="no" />
 
         <TextView
+            android:id="@+id/txtWelcome"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/welcome"
@@ -26,13 +27,14 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/txtTutorial1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
+            android:justificationMode="inter_word"
             android:paddingLeft="@dimen/desc_padding"
             android:paddingRight="@dimen/desc_padding"
             android:text="@string/welcome_text"
-            android:justificationMode="inter_word"
             android:textColor="@android:color/white"
             android:textSize="@dimen/slide_desc" />
 

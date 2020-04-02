@@ -87,8 +87,6 @@ import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconAllowOverlap
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconIgnorePlacement;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconImage;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconOffset;
-import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.symbolAvoidEdges;
-
 
 
 /**
@@ -332,7 +330,7 @@ public class MapsActivity extends AppCompatActivity implements
                 Intent intent = new PlaceAutocomplete.IntentBuilder()
                         .accessToken(Mapbox.getAccessToken() != null ? Mapbox.getAccessToken() : getString(R.string.access_token))
                         .placeOptions(PlaceOptions.builder()
-                                .backgroundColor(Color.parseColor("#EEEEEE"))
+                                .backgroundColor(Color.parseColor("#ffffff"))
                                 .limit(10)
                                 .proximity(Point.fromLngLat(point.getLongitude(),point.getLatitude()))
                                 .build(PlaceOptions.MODE_CARDS))
@@ -716,7 +714,7 @@ public class MapsActivity extends AppCompatActivity implements
         StringBuilder poi_text = new StringBuilder();
 
         AtomicInteger count = new AtomicInteger();
-        String msg = "";
+        String msg;
         for (Entry<Location, ArrayList<String>> pair : poi_navigation.entrySet()) {
             Log.d(TAG, ""+count);
             Log.d(TAG, pair.getKey()+"");

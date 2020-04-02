@@ -50,12 +50,11 @@ public class CalculateDirection {
     }
 
     public void bearingsToDirection() {
-        ArrayList<String> directions = new ArrayList<>();
 
         ArrayList<Integer> bearings_to_poi = bearingsToLocations();
 
         for (int i =0; i<bearings_to_poi.size();i++) {
-            Integer bearing = 0;
+            Integer bearing;
             Integer mybearing = calculateAverage(mybearings);
             int my_bearing_back = (int)Math.round((mybearing+180)%360);
 
@@ -111,7 +110,7 @@ public class CalculateDirection {
                 String direction = "Left";
                 poi.get(tilequerylocs.get(i)).add(direction);
 
-            } else if((bearing<=mybearingThres1 || bearing>=mybearingThres2) || bearing==mybearing) {
+            } else if((bearing<=mybearingThres1 || bearing>=mybearingThres2) || bearing.equals(mybearing)) {
                 Log.d(TAG+":Adding FRONT",bearing.toString());
                 String direction = "Front";
                 poi.get(tilequerylocs.get(i)).add(direction);

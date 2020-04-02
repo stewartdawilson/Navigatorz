@@ -56,7 +56,6 @@ import com.mapbox.services.android.navigation.ui.v5.route.NavigationMapRoute;
 import com.mapbox.services.android.navigation.v5.navigation.NavigationRoute;
 
 import java.lang.ref.WeakReference;
-import java.util.Arrays;
 import java.util.List;
 
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconAllowOverlap;
@@ -372,7 +371,7 @@ public class NavigateActivity extends AppCompatActivity implements OnMapReadyCal
         txtAddress.setText("Address: " +selectedCarmenFeature.placeName());
         try {
             String categories = selectedCarmenFeature.properties().get("category").getAsString();
-            String categories_arr[] = categories.trim().split("\\s*,\\s*");
+            String[] categories_arr = categories.trim().split("\\s*,\\s*");
             String category = categories_arr[categories_arr.length-1];
 
             String category_formatted = category.substring(0, 1).toUpperCase() + category.substring(1);

@@ -1,4 +1,5 @@
 package com.example.navigatorz;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.location.Location;
 import android.preference.PreferenceManager;
@@ -8,7 +9,7 @@ import java.util.Date;
 
 class Utils {
 
-    static final String KEY_REQUESTING_LOCATION_UPDATES = "requesting_locaction_updates";
+    static final String KEY_REQUESTING_LOCATION_UPDATES = "requesting_location_updates";
     static final String KEY_REQUESTING_HEALTH_UPDATES = "requesting_health_updates";
     static final String KEY_REQUESTING_BANK_UPDATES = "requesting_bank_updates";
     static final String KEY_REQUESTING_ENTERTAINMENT_UPDATES = "requesting_entertainment_updates";
@@ -218,6 +219,7 @@ class Utils {
                 "(" + location.getLatitude() + ", " + location.getLongitude() + ")";
     }
 
+    @SuppressLint("StringFormatInvalid")
     static String getLocationTitle(Context context) {
         return context.getString(R.string.walking,
                 DateFormat.getDateTimeInstance().format(new Date()));

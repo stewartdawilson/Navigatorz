@@ -158,11 +158,6 @@
 
             </ScrollView>
 
-            <TextView
-                android:id="@+id/bearing_accuracy_info_textview"
-                android:layout_width="89dp"
-                android:layout_height="wrap_content" />
-
         </androidx.cardview.widget.CardView>
     </FrameLayout>
 

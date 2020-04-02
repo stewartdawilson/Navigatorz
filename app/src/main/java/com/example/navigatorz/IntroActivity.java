@@ -117,6 +117,7 @@ public class IntroActivity extends AppCompatActivity {
             dots[i].setText(Html.fromHtml("&#8226;"));
             dots[i].setTextSize(35);
             dots[i].setTextColor(colorsInactive[currentPage]);
+            dots[i].setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             dotsLayout.addView(dots[i]);
         }
 

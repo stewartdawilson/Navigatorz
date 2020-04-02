@@ -32,8 +32,24 @@ dependencies {
     implementation 'androidx.preference:preference:1.1.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     testImplementation 'junit:junit:4.12'
+
+    // Core library
+    androidTestImplementation 'androidx.test:core:1.2.0'
+
+    // AndroidJUnitRunner and JUnit Rules
+    androidTestImplementation 'androidx.test:rules:1.2.0'
+
     androidTestImplementation 'androidx.test:runner:1.2.0'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0-alpha05'
+    androidTestImplementation 'androidx.test.espresso:espresso-accessibility:3.3.0-alpha05'
+    androidTestImplementation 'androidx.test.espresso:espresso-contrib:3.3.0-alpha05'
+
+
+    androidTestImplementation 'com.android.support.test:rules:1.0.2'
+    androidTestImplementation 'com.google.guava:guava:28.2-android'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+
+
 
 
 
