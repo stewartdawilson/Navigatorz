@@ -115,7 +115,7 @@ public class CalculateDirection {
                 String direction = "Front";
                 poi.get(tilequerylocs.get(i)).add(direction);
 
-            } else if((bearing>=120 && bearing<=240) || bearing==my_bearing_back) {
+            } else if((bearing>=130 && bearing<=230) || bearing==my_bearing_back) {
                 Log.d(TAG+":Adding BEHIND",bearing.toString());
                 String direction = "Behind";
                 poi.get(tilequerylocs.get(i)).add(direction);

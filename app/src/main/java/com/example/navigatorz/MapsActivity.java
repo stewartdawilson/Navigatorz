@@ -51,6 +51,7 @@ import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapbox.mapboxsdk.maps.Style;
+import com.mapbox.mapboxsdk.maps.UiSettings;
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.PlaceAutocomplete;
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.model.PlaceOptions;
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
@@ -249,6 +250,7 @@ public class MapsActivity extends AppCompatActivity implements
         mapView.onCreate(savedInstanceState);
         mapView.getMapAsync(this);
 
+
         // Bind to the service. If the service is in foreground mode, this signals to the service
         // that since this activity is in the foreground, the service can exit foreground mode.
         bindService(new Intent(this, LocationUpdatesService.class), mServiceConnection,
@@ -311,6 +313,8 @@ public class MapsActivity extends AppCompatActivity implements
     @Override
     public void onMapReady(@NonNull final MapboxMap mapboxMap) {
         MapsActivity.this.mapboxMap = mapboxMap;
+        UiSettings uiSettings = mapboxMap.getUiSettings();
+        uiSettings.setAttributionEnabled(false);
         mapboxMap.setStyle(new Style.Builder().fromUri("mapbox://styles/wilsonsfc/ck3gbcohn0b641cqqa1yaaw24"), new Style.OnStyleLoaded() {
             @Override
             public void onStyleLoaded(@NonNull Style style) {
@@ -792,6 +796,7 @@ public class MapsActivity extends AppCompatActivity implements
             writer.writeNext(entries);
             writer.writeAll(data);
             writer.close();
+            Log.d(TAG, "Write successful");
         } catch (IOException e) {
             Log.e(TAG, "Caught IOException: " + e.getMessage());
         }

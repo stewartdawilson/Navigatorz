@@ -4,6 +4,9 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 
+import com.mapbox.api.geocoding.v5.models.CarmenFeature;
+import com.mapbox.mapboxsdk.plugins.places.autocomplete.PlaceAutocomplete;
+
 import androidx.test.espresso.accessibility.AccessibilityChecks;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -83,13 +86,13 @@ public class AccessibilityInstrumentedTest {
 
     }
 
-//    @Test
-//    public void testNavigateActivityAccessibility() throws Exception {
-//        Context targetContext = InstrumentationRegistry.getInstrumentation()
-//                .getTargetContext();
-//        Intent intent = new Intent(targetContext, NavigateActivity.class);
-//        navigateActivityActivityTestRule.launchActivity(intent);
-//    }
+    @Test
+    public void testNavigateActivityAccessibility() throws Exception {
+        Context targetContext = InstrumentationRegistry.getInstrumentation()
+                .getTargetContext();
+        Intent intent = new Intent(targetContext, NavigateActivity.class);
+        navigateActivityActivityTestRule.launchActivity(intent);
+    }
 
     @Test
     public void testIntroActivityAccessibility() throws Exception {
@@ -97,7 +100,7 @@ public class AccessibilityInstrumentedTest {
                 .getTargetContext();
         Intent intent = new Intent(targetContext, IntroActivity.class);
         introActivityActivityTestRule.launchActivity(intent);
-        onView(withId(R.id.btn_next)).perform(click());
+        onView(withId(R.id.txtWelcome)).perform(click());
     }
 
 }
