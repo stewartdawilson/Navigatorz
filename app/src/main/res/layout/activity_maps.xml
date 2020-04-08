@@ -22,11 +22,6 @@
         mapbox:mapbox_cameraTargetLng="-73.99155"
         mapbox:mapbox_cameraZoom="11">
 
-        <TextView
-            android:id="@+id/bearing_info_textview"
-            android:layout_width="86dp"
-            android:layout_height="wrap_content" />
-
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -36,7 +31,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="296dp"
-                android:layout_marginTop="136dp"
                 android:contentDescription="Search for a location"
                 android:padding="0dp"
                 android:scaleType="center"
@@ -44,142 +38,18 @@
                 mapbox:backgroundTint="@android:color/background_dark"
                 mapbox:borderWidth="0dp"
                 mapbox:fabSize="normal"
+                mapbox:layout_constraintBottom_toBottomOf="parent"
                 mapbox:layout_constraintEnd_toEndOf="parent"
-                mapbox:layout_constraintHorizontal_bias="0.828"
+                mapbox:layout_constraintHorizontal_bias="1.0"
                 mapbox:layout_constraintStart_toStartOf="parent"
-                mapbox:layout_constraintTop_toBottomOf="@+id/btnStopTracking"
+                mapbox:layout_constraintTop_toTopOf="parent"
+                mapbox:layout_constraintVertical_bias="0.937"
                 mapbox:rippleColor="#00EEEEEE"
                 mapbox:useCompatPadding="true" />
-
-            <Button
-                android:id="@+id/btnStopTracking"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Stop"
-                android:importantForAccessibility="no"
-
-                mapbox:layout_constraintBottom_toBottomOf="parent"
-                mapbox:layout_constraintEnd_toEndOf="parent"
-                mapbox:layout_constraintHorizontal_bias="0.981"
-                mapbox:layout_constraintStart_toStartOf="parent"
-                mapbox:layout_constraintTop_toTopOf="parent"
-                mapbox:layout_constraintVertical_bias="0.295" />
-
-            <TextView
-                android:id="@+id/txtConfidence"
-                android:layout_width="98dp"
-                android:layout_height="29dp"
-                android:text="TextView"
-                android:importantForAccessibility="no"
-
-                mapbox:layout_constraintBottom_toBottomOf="parent"
-                mapbox:layout_constraintEnd_toEndOf="parent"
-                mapbox:layout_constraintHorizontal_bias="0.98"
-                mapbox:layout_constraintStart_toStartOf="parent"
-                mapbox:layout_constraintTop_toTopOf="parent"
-                mapbox:layout_constraintVertical_bias="0.153" />
-
-            <Button
-                android:id="@+id/startBtn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Start"
-                android:importantForAccessibility="no"
-
-                mapbox:layout_constraintBottom_toBottomOf="parent"
-                mapbox:layout_constraintEnd_toEndOf="parent"
-                mapbox:layout_constraintHorizontal_bias="0.981"
-                mapbox:layout_constraintStart_toStartOf="parent"
-                mapbox:layout_constraintTop_toTopOf="parent"
-                mapbox:layout_constraintVertical_bias="0.008" />
-
-            <TextView
-                android:id="@+id/txtActivity"
-                android:layout_width="98dp"
-                android:layout_height="29dp"
-                android:text="TextView"
-                android:importantForAccessibility="no"
-
-                mapbox:layout_constraintBottom_toBottomOf="parent"
-                mapbox:layout_constraintEnd_toEndOf="parent"
-                mapbox:layout_constraintHorizontal_bias="0.98"
-                mapbox:layout_constraintStart_toStartOf="parent"
-                mapbox:layout_constraintTop_toTopOf="parent"
-                mapbox:layout_constraintVertical_bias="0.096" />
-
-            <Button
-                android:id="@+id/btnStartTracking"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Track"
-                android:importantForAccessibility="no"
-
-                mapbox:layout_constraintBottom_toBottomOf="parent"
-                mapbox:layout_constraintEnd_toEndOf="parent"
-                mapbox:layout_constraintHorizontal_bias="0.981"
-                mapbox:layout_constraintStart_toStartOf="parent"
-                mapbox:layout_constraintTop_toTopOf="parent"
-                mapbox:layout_constraintVertical_bias="0.21" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
     </com.mapbox.mapboxsdk.maps.MapView>
-
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guideline8"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        mapbox:layout_constraintGuide_percent="0.7" />
-
-    <FrameLayout
-        android:id="@+id/frame_navigation"
-        android:layout_width="409dp"
-        android:layout_height="168dp"
-        android:importantForAccessibility="no"
-
-        mapbox:layout_constraintBottom_toBottomOf="@+id/mapView"
-        mapbox:layout_constraintEnd_toEndOf="parent"
-        mapbox:layout_constraintStart_toStartOf="parent">
-
-        <androidx.cardview.widget.CardView
-            android:id="@+id/cardView_location"
-            android:layout_width="match_parent"
-            android:layout_height="156dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginBottom="8dp"
-            mapbox:cardElevation="0dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="8dp"
-                android:text="@string/api_response"
-                android:importantForAccessibility="no"
-
-                android:textColor="@color/black_semi_transparent"
-                android:textStyle="bold" />
-
-            <ScrollView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginLeft="8dp"
-                android:layout_marginTop="32dp"
-                android:layout_marginRight="8dp">
-
-                <TextView
-                    android:id="@+id/txt_main_annoucements"
-                    android:layout_width="wrap_content"
-                    android:importantForAccessibility="no"
-
-                    android:layout_height="wrap_content" />
-
-            </ScrollView>
-
-        </androidx.cardview.widget.CardView>
-    </FrameLayout>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

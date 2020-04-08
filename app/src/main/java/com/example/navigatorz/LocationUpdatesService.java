@@ -147,9 +147,7 @@ public class LocationUpdatesService extends Service implements SharedPreferences
     private String measurement_type = "0";
     String mostRecentUtteranceID;
     private HashMap<String, String> point_data = new HashMap<>();
-
-
-
+    final Random rnd = new Random(System.currentTimeMillis());
 
 
     public LocationUpdatesService() {
@@ -224,7 +222,8 @@ public class LocationUpdatesService extends Service implements SharedPreferences
                     mServiceHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(LocationUpdatesService.this.getApplicationContext(),"No text-to-speech engine available",Toast.LENGTH_SHORT).show();
+                            Toast.makeText(LocationUpdatesService.this.getApplicationContext(),
+                                    "No text-to-speech engine available",Toast.LENGTH_SHORT).show();
                         }
                     });
                 }else{
@@ -281,16 +280,13 @@ public class LocationUpdatesService extends Service implements SharedPreferences
 
     private void speak(String m) {
         // set unique utterance ID for each utterance
-        mostRecentUtteranceID = (new Random().nextInt() % 9999999) + ""; // "" is String force
+        mostRecentUtteranceID = rnd.nextInt() % 9999999 + "";
 
         // set params
-        // *** this method will work for more devices: API 19+ ***
         HashMap<String, String> params = new HashMap<>();
         point_data.put(mostRecentUtteranceID, m);
-        Log.d(TAG, m);
         params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, mostRecentUtteranceID);
         tts.speak(m,TextToSpeech.QUEUE_ADD,params);
-
     }
 
     @Override

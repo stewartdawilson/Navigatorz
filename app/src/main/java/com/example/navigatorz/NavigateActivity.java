@@ -47,6 +47,7 @@ import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapbox.mapboxsdk.maps.Style;
+import com.mapbox.mapboxsdk.maps.UiSettings;
 import com.mapbox.mapboxsdk.plugins.places.autocomplete.PlaceAutocomplete;
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
@@ -135,6 +136,8 @@ public class NavigateActivity extends AppCompatActivity implements OnMapReadyCal
     @Override
     public void onMapReady(@NonNull final MapboxMap mapboxMap) {
         NavigateActivity.this.mapboxMap = mapboxMap;
+        UiSettings uiSettings = mapboxMap.getUiSettings();
+        uiSettings.setAttributionEnabled(false);
         mapboxMap.setStyle(new Style.Builder().fromUri("mapbox://styles/wilsonsfc/ck3gbcohn0b641cqqa1yaaw24"), new Style.OnStyleLoaded() {
             @Override
             public void onStyleLoaded(@NonNull Style style) {

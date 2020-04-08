@@ -116,13 +116,9 @@ public class MapsActivity extends AppCompatActivity implements
     private PermissionsManager permissionsManager;
     private MapboxMap mapboxMap;
     private MapView mapView;
-    private TextView tilequeryResponseTextView;
-    private TextView bearingTextView;
-    private Button startBtn;
     private boolean bearingSwitch = false;
     private List<String[]> data = new ArrayList<String[]>();
 
-    private Button btnStartTracking, btnStopTracking;
 
     BroadcastReceiver broadcastReceiver;
     private ArrayList<DirectionsRoute> routes = new ArrayList<>();
@@ -185,31 +181,7 @@ public class MapsActivity extends AppCompatActivity implements
         // This contains the MapView in XML and needs to be called after the access token is configured.
         setContentView(R.layout.activity_maps);
 
-        tilequeryResponseTextView = findViewById(R.id.txt_main_annoucements);
-        bearingTextView = findViewById(R.id.bearing_info_textview);
 
-
-
-
-        btnStartTracking = findViewById(R.id.btnStartTracking);
-
-        btnStopTracking = findViewById(R.id.btnStopTracking);
-
-
-
-        btnStartTracking.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                bearings_arr = new ArrayList<>();
-            }
-        });
-
-        btnStopTracking.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                stopTracking();
-            }
-        });
 
         broadcastReceiver = new BroadcastReceiver() {
             @Override
@@ -221,31 +193,8 @@ public class MapsActivity extends AppCompatActivity implements
                 }
             }
         };
-        //startTracking();
-
-        startBtn = findViewById(R.id.startBtn);
         getPermissionWriteFile();
-        startBtn.setBackgroundColor(Color.RED);
 
-
-        startBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                bearingSwitch = !bearingSwitch;
-                if(bearingSwitch) {
-                    Toast.makeText(getApplicationContext(), "Collecting data!",Toast.LENGTH_LONG).show();
-                    startBtn.setBackgroundColor(Color.GREEN);
-                } else {
-                    if(!data.isEmpty()) {
-                        csvWriter(data);
-                        data = new ArrayList<String[]>();
-                    }
-                    Toast.makeText(getApplicationContext(), "Finished collecting data!",Toast.LENGTH_LONG).show();
-                    startBtn.setBackgroundColor(Color.RED);
-
-                }
-            }
-        });
         mapView = findViewById(R.id.mapView);
         mapView.onCreate(savedInstanceState);
         mapView.getMapAsync(this);
@@ -639,35 +588,21 @@ public class MapsActivity extends AppCompatActivity implements
                 }
                 // Pass the new location to the Maps SDK's LocationComponent
                 if (activity.mapboxMap != null && result.getLastLocation() != null) {
-                    Log.d(TAG, "Location Accuracy: "+result.getLastLocation().getAccuracy());
-                    Log.d(TAG, "Bearing Accuracy: "+result.getLastLocation().getBearingAccuracyDegrees());
 
                     LatLng point = truncateLatLng(location, 1e4);
-
-
                     makeTilequeryApiCall(point);
 
-                    Log.d(TAG, "Bearing" +location.getBearing());
                     Integer mybearing =  Math.round(location.getBearing());
                     if(bearings_arr.size()<4) {
                         bearings_arr.add(mybearing);
                     } else {
-                        Log.d(TAG, bearings_arr.toString());
                         bearings_arr.remove(0);
                         bearings_arr.add(mybearing);
-                        Log.d(TAG, bearings_arr.toString());
                     }
-                    bearingTextView.setText(location.getBearing()+"");
 
                     CalculateDirection cd = new CalculateDirection(location, bearings_arr, tilequerylocs,poi_navigation);
                     cd.bearingsToDirection();
                     StringBuilder output = buildOutput(location, Point.fromLngLat(point.getLatitude(), point.getLongitude()));
-
-                    Log.d(TAG, output.toString());
-
-
-
-                    tilequeryResponseTextView.setText("Here are the Points of Interest:\n" + output);
                     activity.mapboxMap.getLocationComponent().forceLocationUpdate(result.getLastLocation());
                 }
             }
