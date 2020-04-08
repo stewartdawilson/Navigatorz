@@ -733,13 +733,13 @@ public class MapsActivity extends AppCompatActivity implements
                     time = time / 60;
                     units.set(" minutes");
                 }
-                int distance = (int) Math.round(routes.get(count.get()).distance());
+                long distance = Math.round(Double.parseDouble(pair.getValue().get(1)));
                 if(distance<=5) {
                     poi_text.append(pair.getValue().get(3)).append(" is right next to you").append("\n");
                     msg = pair.getValue().get(3)+ " is right next to you\n";
                 } else {
                     poi_text.append(pair.getValue().get(3)).append(" is ").append(pair.getValue().get(1)).append("m ").append(" on your ").append(pair.getValue().get(4)).append("\n");
-                    msg = pair.getValue().get(3) + " is " + pair.getValue().get(1) + "m or " + +time + units.get() + " on your " + pair.getValue().get(4) + "\n";
+                    msg = pair.getValue().get(3) + " is " + distance + "m or " + +time + units.get() + " on your " + pair.getValue().get(4) + "\n";
                 }
                 count.getAndIncrement();
                 Point poi_point = Point.fromJson(pair.getValue().get(2));
